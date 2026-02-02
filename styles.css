@@ -1416,3 +1416,493 @@ html, body {
         grid-template-columns: repeat(5, 1fr);
     }
 }
+
+/* ============================================
+   VOICE RECORDER STYLES
+   ============================================ */
+
+.recorder-section {
+    background: var(--bg-card);
+    border: 4px solid #000;
+    border-radius: 20px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    box-shadow: var(--shadow);
+}
+
+.recorder-section h3 {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.3rem;
+    color: var(--text-dark);
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.recorder-controls {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.btn-record {
+    background: var(--hot-pink);
+    color: white;
+    border: 4px solid #000;
+    padding: 1rem 2rem;
+    border-radius: 50px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: 'Fredoka One', cursive;
+    box-shadow: var(--shadow);
+    transition: transform 0.1s;
+    animation: pulse-record 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-record {
+    0%, 100% { transform: scale(1); box-shadow: var(--shadow); }
+    50% { transform: scale(1.05); box-shadow: 8px 8px 0px #000; }
+}
+
+.btn-record:hover {
+    animation: none;
+    transform: translate(2px, 2px);
+    box-shadow: 4px 4px 0px #000;
+}
+
+.btn-record:active {
+    transform: translate(4px, 4px);
+    box-shadow: 2px 2px 0px #000;
+}
+
+.btn-record.recording {
+    background: var(--coral);
+    animation: pulse-recording 0.8s ease-in-out infinite;
+}
+
+@keyframes pulse-recording {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+.btn-stop-record {
+    background: var(--coral);
+    color: white;
+    border: 4px solid #000;
+    padding: 1rem 2rem;
+    border-radius: 50px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: 'Fredoka One', cursive;
+    box-shadow: var(--shadow);
+    transition: transform 0.1s;
+    animation: shake-stop 0.5s ease-in-out infinite;
+}
+
+@keyframes shake-stop {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-3px) rotate(-2deg); }
+    75% { transform: translateX(3px) rotate(2deg); }
+}
+
+.btn-stop-record:hover {
+    animation: none;
+    transform: translate(2px, 2px);
+    box-shadow: 4px 4px 0px #000;
+}
+
+.btn-stop-record:active {
+    transform: translate(4px, 4px);
+    box-shadow: 2px 2px 0px #000;
+}
+
+.recording-timer {
+    text-align: center;
+    font-family: 'Fredoka One', cursive;
+    font-size: 2rem;
+    color: var(--hot-pink);
+    margin-bottom: 1rem;
+    animation: blink-timer 1s ease-in-out infinite;
+}
+
+@keyframes blink-timer {
+    0%, 100% { opacity: 1; color: var(--hot-pink); }
+    50% { opacity: 0.5; color: #ff0000; }
+}
+
+.recorded-clips {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    max-height: 200px;
+    overflow-y: auto;
+    padding-right: 0.5rem;
+}
+
+.recorded-clip {
+    background: var(--bg);
+    border: 3px solid #000;
+    border-radius: 15px;
+    padding: 0.75rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    box-shadow: 4px 4px 0px #000;
+    transition: transform 0.1s;
+}
+
+.recorded-clip:hover {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0px #000;
+}
+
+.recorded-clip .clip-icon {
+    width: 40px;
+    height: 40px;
+    background: var(--yellow);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 3px solid #000;
+    font-size: 1.2rem;
+    color: #000;
+}
+
+.recorded-clip .clip-info {
+    flex: 1;
+}
+
+.recorded-clip .clip-name {
+    font-family: 'Fredoka One', cursive;
+    font-size: 0.95rem;
+    color: var(--text-dark);
+}
+
+.recorded-clip .clip-duration {
+    font-size: 0.8rem;
+    color: var(--teal);
+    font-weight: 600;
+}
+
+.recorded-clip .clip-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.recorded-clip .btn-play-clip,
+.recorded-clip .btn-delete-clip {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 3px solid #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: transform 0.1s;
+}
+
+.recorded-clip .btn-play-clip {
+    background: var(--lime);
+    color: #000;
+}
+
+.recorded-clip .btn-delete-clip {
+    background: var(--hot-pink);
+    color: white;
+}
+
+.recorded-clip .btn-play-clip:active,
+.recorded-clip .btn-delete-clip:active {
+    transform: scale(0.9);
+}
+
+.btn-add-to-beat {
+    background: var(--lime);
+    color: #000;
+    border: 4px solid #000;
+    padding: 0.75rem 1.5rem;
+    border-radius: 50px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: 'Fredoka One', cursive;
+    box-shadow: var(--shadow);
+    transition: transform 0.1s;
+    margin-top: 0.5rem;
+}
+
+.btn-add-to-beat:hover {
+    transform: translate(2px, 2px);
+    box-shadow: 4px 4px 0px #000;
+}
+
+.btn-add-to-beat:active {
+    transform: translate(4px, 4px);
+    box-shadow: 2px 2px 0px #000;
+}
+
+/* ============================================
+   PIANO KEYBOARD STYLES
+   ============================================ */
+
+.piano-section {
+    background: var(--bg-card);
+    border: 4px solid #000;
+    border-radius: 20px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    box-shadow: var(--shadow);
+}
+
+.piano-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 3px dashed var(--yellow);
+}
+
+.piano-header h3 {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.2rem;
+    color: var(--text-dark);
+}
+
+.instrument-select {
+    background: var(--yellow);
+    border: 3px solid #000;
+    border-radius: 50px;
+    padding: 0.5rem 1rem;
+    font-family: 'Fredoka One', cursive;
+    font-size: 0.9rem;
+    color: #000;
+    cursor: pointer;
+    box-shadow: 4px 4px 0px #000;
+    outline: none;
+}
+
+.instrument-select:focus {
+    box-shadow: 2px 2px 0px #000;
+}
+
+.piano-container {
+    background: #1a1a2e;
+    border: 4px solid #000;
+    border-radius: 15px;
+    padding: 1rem;
+    overflow-x: auto;
+    position: relative;
+}
+
+.piano-keys {
+    display: flex;
+    position: relative;
+    height: 160px;
+    min-width: max-content;
+    justify-content: center;
+}
+
+.piano-key {
+    position: relative;
+    cursor: pointer;
+    transition: all 0.1s;
+    border: 3px solid #000;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 0.5rem;
+}
+
+.piano-key.white {
+    width: 40px;
+    height: 100%;
+    background: #fff;
+    border-radius: 0 0 8px 8px;
+    z-index: 1;
+}
+
+.piano-key.white:hover {
+    background: #f0f0f0;
+}
+
+.piano-key.white.active {
+    background: var(--yellow);
+    transform: translateY(4px);
+    box-shadow: inset 0 4px 8px rgba(0,0,0,0.3);
+}
+
+.piano-key.black {
+    width: 28px;
+    height: 65%;
+    background: #000;
+    border-radius: 0 0 6px 6px;
+    position: absolute;
+    z-index: 2;
+    margin-left: -14px;
+}
+
+.piano-key.black:hover {
+    background: #333;
+}
+
+.piano-key.black.active {
+    background: var(--hot-pink);
+    transform: translateY(4px);
+    box-shadow: inset 0 4px 8px rgba(0,0,0,0.5);
+}
+
+/* Position black keys between white keys */
+.piano-key.black:nth-of-type(2) { left: 40px; }
+.piano-key.black:nth-of-type(4) { left: 80px; }
+.piano-key.black:nth-of-type(7) { left: 160px; }
+.piano-key.black:nth-of-type(9) { left: 200px; }
+.piano-key.black:nth-of-type(11) { left: 240px; }
+
+.piano-label {
+    font-family: 'Fredoka One', cursive;
+    font-size: 0.7rem;
+    color: #666;
+    pointer-events: none;
+}
+
+.piano-key.black .piano-label {
+    color: #fff;
+    font-size: 0.6rem;
+}
+
+.piano-key.active .piano-label {
+    color: #000;
+}
+
+.piano-controls {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+    border-top: 3px dashed var(--yellow);
+}
+
+.btn-piano-record {
+    background: var(--hot-pink);
+    color: white;
+    border: 3px solid #000;
+    padding: 0.6rem 1.2rem;
+    border-radius: 50px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: 'Fredoka One', cursive;
+    box-shadow: 4px 4px 0px #000;
+    transition: transform 0.1s;
+}
+
+.btn-piano-record.recording {
+    animation: pulse-record 1s ease-in-out infinite;
+}
+
+.btn-piano-clear {
+    background: var(--coral);
+    color: white;
+    border: 3px solid #000;
+    padding: 0.6rem 1.2rem;
+    border-radius: 50px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: 'Fredoka One', cursive;
+    box-shadow: 4px 4px 0px #000;
+    transition: transform 0.1s;
+}
+
+.btn-piano-record:active,
+.btn-piano-clear:active {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0px #000;
+}
+
+/* ============================================
+   RESPONSIVE STYLES FOR RECORDER & PIANO
+   ============================================ */
+
+@media (max-width: 480px) {
+    .recorder-section {
+        padding: 1rem;
+    }
+    
+    .recorder-controls {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .btn-record,
+    .btn-stop-record {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .recording-timer {
+        font-size: 1.5rem;
+    }
+    
+    .recorded-clip {
+        flex-wrap: wrap;
+    }
+    
+    .piano-keys {
+        height: 140px;
+    }
+    
+    .piano-key.white {
+        width: 35px;
+    }
+    
+    .piano-key.black {
+        width: 24px;
+        margin-left: -12px;
+    }
+    
+    .piano-container {
+        padding: 0.75rem;
+    }
+    
+    .piano-controls {
+        flex-wrap: wrap;
+    }
+}
+
+@media (max-width: 360px) {
+    .piano-key.white {
+        width: 30px;
+    }
+    
+    .piano-key.black {
+        width: 20px;
+        margin-left: -10px;
+    }
+    
+    .piano-keys {
+        height: 120px;
+    }
+}

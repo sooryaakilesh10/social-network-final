@@ -17,6 +17,8 @@ const AppState = {
     projectName: 'My First Beat',
     savedBeats: [],
     likedBeats: new Set(),
+    voiceRecordingUrl: null,
+    pianoRecordingUrl: null,
 };
 
 // Genre configurations with colors
@@ -97,7 +99,7 @@ let loop = null;
 
 function initAudio() {
     if (AppState.audioContextStarted) return;
-    
+
     // Initialize synthesizers for each track
     synths = {
         kick: new Tone.MembraneSynth({
@@ -145,6 +147,10 @@ function initAudio() {
         }).toDestination()
     };
 
+    // Voice and piano players for recordings
+    synths.voicePlayer = null;
+    synths.pianoLoop = null;
+
     // Set volumes
     synths.kick.volume.value = 0;
     synths.snare.volume.value = -5;
@@ -166,7 +172,7 @@ function initAudio() {
 
 function playStep(time) {
     const step = AppState.currentStep;
-    
+
     // Play each active cell
     if (AppState.grid[0][step]) synths.kick.triggerAttackRelease("C1", "8n", time);
     if (AppState.grid[1][step]) synths.snare.triggerAttackRelease("8n", time);
@@ -175,7 +181,26 @@ function playStep(time) {
     if (AppState.grid[4][step]) synths.bass.triggerAttackRelease("C2", "8n", time);
     if (AppState.grid[5][step]) synths.synth.triggerAttackRelease(["C4", "E4", "G4"], "8n", time);
     if (AppState.grid[6][step]) synths.fx.triggerAttackRelease("C5", "8n", time);
-    
+
+    // Play piano recording notes that fall on this step
+    if (AppState.pianoRecordingUrl && AppState.pianoRecordingUrl.length > 0 && pianoSynth) {
+        const stepDuration = (60 / AppState.bpm) * 1000; // Duration of one step in ms
+        const loopDuration = stepDuration * 8; // 8 steps total
+
+        AppState.pianoRecordingUrl.forEach(noteData => {
+            // Calculate which step this note falls on
+            const noteTime = noteData.time % loopDuration;
+            const noteStep = Math.floor(noteTime / stepDuration);
+
+            // Play if this note falls on the current step
+            if (noteStep === step) {
+                const noteOffset = (noteTime % stepDuration) / 1000; // Offset within the step
+                const duration = noteData.duration ? (noteData.duration / 1000) : 0.1;
+                pianoSynth.triggerAttackRelease(noteData.note, duration, time + noteOffset);
+            }
+        });
+    }
+
     // Visual feedback
     Tone.Draw.schedule(() => {
         highlightPlayingStep(step);
@@ -190,7 +215,7 @@ function highlightPlayingStep(step) {
     document.querySelectorAll('.step-indicator').forEach((el, i) => {
         el.classList.toggle('active', i === step);
     });
-    
+
     document.querySelectorAll('.grid-cell').forEach((cell, i) => {
         const cellStep = i % 8;
         cell.classList.toggle('playing', cellStep === step);
@@ -202,27 +227,33 @@ function togglePlayback() {
         Tone.start();
         initAudio();
     }
-    
+
     AppState.isPlaying = !AppState.isPlaying;
-    
+
     if (AppState.isPlaying) {
         Tone.Transport.start();
         loop.start(0);
         document.getElementById('play-btn').innerHTML = '<i class="fas fa-pause"></i>';
         document.getElementById('play-btn').classList.add('playing');
+        // Play voice recording if available
+        playVoiceRecording();
+        // Schedule piano recording playback (now handled in playStep)
+        schedulePianoPlayback();
     } else {
         Tone.Transport.stop();
         loop.stop();
         document.getElementById('play-btn').innerHTML = '<i class="fas fa-play"></i>';
         document.getElementById('play-btn').classList.remove('playing');
         AppState.currentStep = 0;
-        
+
         document.querySelectorAll('.step-indicator').forEach((el, i) => {
             el.classList.toggle('active', i === 0);
         });
         document.querySelectorAll('.grid-cell').forEach(cell => {
             cell.classList.remove('playing');
         });
+        // Stop voice recording if playing
+        stopVoiceRecording();
     }
 }
 
@@ -233,19 +264,19 @@ function init() {
     // Set project date
     const date = new Date();
     document.getElementById('project-date').textContent = date.toLocaleDateString();
-    
+
     // Generate sequencer grid
     generateGrid();
-    
+
     // Initialize discovery feed
     populateDiscoveryFeed();
-    
+
     // Initialize stem packs
     populateStemPacks();
-    
+
     // Set up event listeners
     setupEventListeners();
-    
+
     // Check for saved state
     loadSavedState();
 }
@@ -253,20 +284,20 @@ function init() {
 function generateGrid() {
     const grid = document.getElementById('sequencer-grid');
     grid.innerHTML = '';
-    
+
     for (let track = 0; track < 8; track++) {
         for (let step = 0; step < 8; step++) {
             const cell = document.createElement('div');
             cell.className = 'grid-cell';
             cell.dataset.track = track;
             cell.dataset.step = step;
-            
+
             cell.addEventListener('click', () => toggleCell(track, step));
             cell.addEventListener('touchstart', (e) => {
                 e.preventDefault();
                 toggleCell(track, step);
             });
-            
+
             grid.appendChild(cell);
         }
     }
@@ -274,15 +305,15 @@ function generateGrid() {
 
 function toggleCell(track, step) {
     AppState.grid[track][step] = !AppState.grid[track][step];
-    
+
     const cell = document.querySelector(`.grid-cell[data-track="${track}"][data-step="${step}"]`);
     cell.classList.toggle('active', AppState.grid[track][step]);
-    
+
     // Haptic feedback
     if (navigator.vibrate) {
         navigator.vibrate(10);
     }
-    
+
     // Play preview sound
     if (!AppState.isPlaying && AppState.audioContextStarted) {
         previewSound(track);
@@ -291,7 +322,7 @@ function toggleCell(track, step) {
 
 function previewSound(track) {
     const now = Tone.now();
-    switch(track) {
+    switch (track) {
         case 0: synths.kick.triggerAttackRelease("C1", "8n", now); break;
         case 1: synths.snare.triggerAttackRelease("8n", now); break;
         case 2: synths.hihat.triggerAttackRelease("32n", now); break;
@@ -308,23 +339,23 @@ function previewSound(track) {
 function setupEventListeners() {
     // Onboarding
     document.getElementById('start-btn').addEventListener('click', startApp);
-    
+
     // Navigation
     document.querySelectorAll('.nav-btn').forEach(btn => {
         btn.addEventListener('click', () => switchTab(btn.dataset.tab));
     });
-    
+
     // Play button
     document.getElementById('play-btn').addEventListener('click', togglePlayback);
-    
+
     // Genre selector
     document.querySelectorAll('.genre-btn').forEach(btn => {
         btn.addEventListener('click', () => changeGenre(btn.dataset.genre));
     });
-    
+
     // Magic Fill
     document.getElementById('magic-fill-btn').addEventListener('click', magicFill);
-    
+
     // BPM control
     document.getElementById('bpm-slider').addEventListener('input', (e) => {
         AppState.bpm = parseInt(e.target.value);
@@ -333,28 +364,28 @@ function setupEventListeners() {
             Tone.Transport.bpm.value = AppState.bpm;
         }
     });
-    
+
     // Share
     document.getElementById('share-btn').addEventListener('click', openShareModal);
     document.getElementById('share-next').addEventListener('click', nextShareStep);
     document.getElementById('share-prev').addEventListener('click', prevShareStep);
     document.getElementById('preview-share-btn').addEventListener('click', previewShare);
-    
+
     // Mood filter
     document.querySelectorAll('.mood-btn').forEach(btn => {
         btn.addEventListener('click', () => filterByMood(btn.dataset.mood));
     });
-    
+
     // Category cards
     document.querySelectorAll('.category-card').forEach(card => {
         card.addEventListener('click', () => showCategory(card.dataset.category));
     });
-    
+
     // Export buttons
     document.querySelectorAll('.export-btn').forEach(btn => {
         btn.addEventListener('click', handleExport);
     });
-    
+
     // Project name
     document.getElementById('project-name').addEventListener('change', (e) => {
         AppState.projectName = e.target.value;
@@ -363,11 +394,11 @@ function setupEventListeners() {
 
 function startApp() {
     document.getElementById('onboarding').classList.add('hidden');
-    
+
     // Initialize audio context on user interaction
     Tone.start();
     initAudio();
-    
+
     // Show tutorial for first-time users
     if (!localStorage.getItem('loopflow_tutorial_seen')) {
         showTutorial();
@@ -385,12 +416,12 @@ function skipTutorial() {
 
 function switchTab(tab) {
     AppState.currentTab = tab;
-    
+
     // Update nav buttons
     document.querySelectorAll('.nav-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.tab === tab);
     });
-    
+
     // Update tab content
     document.querySelectorAll('.tab-content').forEach(content => {
         content.classList.remove('active');
@@ -401,49 +432,49 @@ function switchTab(tab) {
 function changeGenre(genre) {
     AppState.currentGenre = genre;
     const genreConfig = Genres[genre];
-    
+
     // Update UI
     document.querySelectorAll('.genre-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.genre === genre);
     });
-    
+
     // Update CSS variable for genre color
     document.documentElement.style.setProperty('--genre-color', genreConfig.color);
-    
+
     // Update BPM
     AppState.bpm = genreConfig.bpm;
     document.getElementById('bpm-slider').value = genreConfig.bpm;
     document.getElementById('bpm-value').textContent = genreConfig.bpm;
-    
+
     if (AppState.audioContextStarted) {
         Tone.Transport.bpm.value = genreConfig.bpm;
     }
-    
+
     showToast(`Switched to ${genreConfig.name} mode`, 'success');
 }
 
 function magicFill() {
     const pattern = MagicPatterns[AppState.currentGenre];
-    
+
     // Apply pattern to grid
     for (let track = 0; track < 8; track++) {
         for (let step = 0; step < 8; step++) {
             AppState.grid[track][step] = pattern[track][step] === 1;
         }
     }
-    
+
     // Update UI
     document.querySelectorAll('.grid-cell').forEach(cell => {
         const track = parseInt(cell.dataset.track);
         const step = parseInt(cell.dataset.step);
         cell.classList.toggle('active', AppState.grid[track][step]);
     });
-    
+
     // Haptic feedback
     if (navigator.vibrate) {
         navigator.vibrate([50, 50, 50]);
     }
-    
+
     showToast('✨ Magic pattern applied!', 'success');
 }
 
@@ -453,7 +484,7 @@ function magicFill() {
 function populateDiscoveryFeed() {
     const feed = document.getElementById('beats-feed');
     feed.innerHTML = '';
-    
+
     SampleBeats.forEach(beat => {
         const card = createBeatCard(beat);
         feed.appendChild(card);
@@ -465,9 +496,9 @@ function createBeatCard(beat) {
     card.className = 'beat-card';
     card.dataset.mood = beat.mood;
     card.dataset.genre = beat.genre;
-    
+
     const isLiked = AppState.likedBeats.has(beat.id);
-    
+
     card.innerHTML = `
         <div class="beat-visualizer">
             <canvas id="visualizer-${beat.id}"></canvas>
@@ -498,10 +529,10 @@ function createBeatCard(beat) {
             </div>
         </div>
     `;
-    
+
     // Initialize visualizer for this beat
     setTimeout(() => initVisualizer(`visualizer-${beat.id}`, beat.genre), 100);
-    
+
     return card;
 }
 
@@ -510,7 +541,7 @@ function filterByMood(mood) {
     document.querySelectorAll('.mood-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.mood === mood);
     });
-    
+
     // Filter cards
     document.querySelectorAll('.beat-card').forEach(card => {
         if (mood === 'all' || card.dataset.mood === mood) {
@@ -528,7 +559,7 @@ function likeBeat(id) {
         AppState.likedBeats.add(id);
         if (navigator.vibrate) navigator.vibrate(20);
     }
-    
+
     // Update UI
     populateDiscoveryFeed();
 }
@@ -563,52 +594,52 @@ function playBeat(id) {
 function initVisualizer(canvasId, genre) {
     const canvas = document.getElementById(canvasId);
     if (!canvas) return;
-    
+
     const ctx = canvas.getContext('2d');
     canvas.width = canvas.offsetWidth;
     canvas.height = canvas.offsetHeight;
-    
+
     const colors = {
         trap: ['#8B5CF6', '#EC4899'],
         lofi: ['#3B82F6', '#60A5FA'],
         house: ['#F97316', '#FBBF24'],
         ambient: ['#10B981', '#34D399']
     };
-    
+
     const [color1, color2] = colors[genre] || colors.trap;
-    
+
     let animationId;
     let bars = [];
     const barCount = 20;
-    
+
     for (let i = 0; i < barCount; i++) {
         bars.push({
             height: Math.random() * canvas.height * 0.5,
             speed: 0.02 + Math.random() * 0.03
         });
     }
-    
+
     function animate() {
         ctx.fillStyle = 'rgba(10, 10, 15, 0.2)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
+
         const barWidth = canvas.width / barCount;
-        
+
         bars.forEach((bar, i) => {
             bar.height += Math.sin(Date.now() * bar.speed) * 2;
             bar.height = Math.max(10, Math.min(canvas.height * 0.7, bar.height));
-            
+
             const gradient = ctx.createLinearGradient(0, canvas.height, 0, canvas.height - bar.height);
             gradient.addColorStop(0, color1);
             gradient.addColorStop(1, color2);
-            
+
             ctx.fillStyle = gradient;
             ctx.fillRect(i * barWidth + 2, canvas.height - bar.height, barWidth - 4, bar.height);
         });
-        
+
         animationId = requestAnimationFrame(animate);
     }
-    
+
     animate();
 }
 
@@ -618,7 +649,7 @@ function initVisualizer(canvasId, genre) {
 function populateStemPacks() {
     const list = document.getElementById('stem-list');
     list.innerHTML = '';
-    
+
     StemPacks.forEach(stem => {
         const item = document.createElement('div');
         item.className = 'stem-item';
@@ -632,11 +663,11 @@ function populateStemPacks() {
             </div>
             <span class="stem-tag">${stem.tag}</span>
         `;
-        
+
         item.addEventListener('click', () => {
             showToast(`Loaded ${stem.name}`, 'success');
         });
-        
+
         list.appendChild(item);
     });
 }
@@ -664,15 +695,15 @@ function updateShareStep() {
     document.querySelectorAll('.share-step').forEach(step => {
         step.classList.add('hidden');
     });
-    
+
     // Show current step
     document.getElementById(`share-step-${AppState.shareStep}`).classList.remove('hidden');
-    
+
     // Update progress dots
     document.querySelectorAll('.progress-dot').forEach((dot, i) => {
         dot.classList.toggle('active', i < AppState.shareStep);
     });
-    
+
     // Update buttons
     document.getElementById('share-prev').classList.toggle('hidden', AppState.shareStep === 1);
     document.getElementById('share-next').textContent = AppState.shareStep === 3 ? 'Done' : 'Next';
@@ -699,19 +730,19 @@ function prevShareStep() {
 function previewShare() {
     togglePlayback();
     const btn = document.getElementById('preview-share-btn');
-    btn.innerHTML = AppState.isPlaying ? 
-        '<i class="fas fa-pause"></i> Pause' : 
+    btn.innerHTML = AppState.isPlaying ?
+        '<i class="fas fa-pause"></i> Pause' :
         '<i class="fas fa-play"></i> Preview';
 }
 
 function initShareVisualizer() {
     const canvas = document.getElementById('share-visualizer');
     if (!canvas) return;
-    
+
     const ctx = canvas.getContext('2d');
     canvas.width = canvas.offsetWidth;
     canvas.height = canvas.offsetHeight;
-    
+
     const genre = AppState.currentGenre;
     const colors = {
         trap: ['#8B5CF6', '#EC4899'],
@@ -719,30 +750,30 @@ function initShareVisualizer() {
         house: ['#F97316', '#FBBF24'],
         ambient: ['#10B981', '#34D399']
     };
-    
+
     const [color1, color2] = colors[genre];
-    
+
     function draw() {
         ctx.fillStyle = 'rgba(26, 26, 46, 0.3)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
+
         const time = Date.now() * 0.001;
         const centerX = canvas.width / 2;
         const centerY = canvas.height / 2;
-        
+
         // Draw geometric shapes based on genre
         for (let i = 0; i < 5; i++) {
             const radius = 30 + i * 20 + Math.sin(time + i) * 10;
             const rotation = time * (0.5 + i * 0.1);
-            
+
             ctx.save();
             ctx.translate(centerX, centerY);
             ctx.rotate(rotation);
-            
+
             ctx.beginPath();
             ctx.strokeStyle = i % 2 === 0 ? color1 : color2;
             ctx.lineWidth = 2;
-            
+
             if (genre === 'trap') {
                 // Draw squares
                 ctx.rect(-radius, -radius, radius * 2, radius * 2);
@@ -766,20 +797,20 @@ function initShareVisualizer() {
                 }
                 ctx.closePath();
             }
-            
+
             ctx.stroke();
             ctx.restore();
         }
-        
+
         requestAnimationFrame(draw);
     }
-    
+
     draw();
 }
 
 function handleExport(e) {
     const btn = e.currentTarget;
-    
+
     if (btn.classList.contains('tiktok')) {
         showToast('Exporting to TikTok...', 'success');
     } else if (btn.classList.contains('instagram')) {
@@ -798,10 +829,10 @@ function saveBeat() {
         date: new Date().toLocaleDateString(),
         grid: JSON.parse(JSON.stringify(AppState.grid))
     };
-    
+
     AppState.savedBeats.push(beat);
     localStorage.setItem('loopflow_beats', JSON.stringify(AppState.savedBeats));
-    
+
     updateProfileStats();
 }
 
@@ -822,16 +853,16 @@ function loadSavedState() {
 // ============================================
 function showToast(message, type = 'info') {
     const container = document.getElementById('toast-container');
-    
+
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
     toast.innerHTML = `
         <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-info-circle'}"></i>
         <span>${message}</span>
     `;
-    
+
     container.appendChild(toast);
-    
+
     setTimeout(() => {
         toast.style.opacity = '0';
         toast.style.transform = 'translateY(-20px)';
@@ -850,6 +881,409 @@ document.addEventListener('keydown', (e) => {
 });
 
 // ============================================
+// VOICE RECORDER
+// ============================================
+let mediaRecorder = null;
+let recordedChunks = [];
+let recordingTimer = null;
+let recordingSeconds = 0;
+let voiceRecordingUrl = null; // This is now AppState.voiceRecordingUrl
+
+function initVoiceRecorder() {
+    const recordBtn = document.getElementById('record-btn');
+    const stopBtn = document.getElementById('stop-record-btn');
+    const timer = document.getElementById('recording-timer');
+
+    recordBtn.addEventListener('click', startRecording);
+    stopBtn.addEventListener('click', stopRecording);
+}
+
+async function startRecording() {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+        recordedChunks = [];
+
+        mediaRecorder.ondataavailable = (e) => {
+            if (e.data.size > 0) {
+                recordedChunks.push(e.data);
+            }
+        };
+
+        mediaRecorder.onstop = saveRecording;
+
+        mediaRecorder.start();
+
+        // Update UI
+        document.getElementById('record-btn').classList.add('hidden');
+        document.getElementById('stop-record-btn').classList.remove('hidden');
+        document.getElementById('recording-timer').classList.remove('hidden');
+
+        // Start timer
+        recordingSeconds = 0;
+        updateRecordingTimer();
+        recordingTimer = setInterval(updateRecordingTimer, 1000);
+
+        showToast('🔴 Recording started!', 'success');
+    } catch (err) {
+        showToast('Microphone access denied', 'error');
+    }
+}
+
+function updateRecordingTimer() {
+    recordingSeconds++;
+    const mins = Math.floor(recordingSeconds / 60).toString().padStart(2, '0');
+    const secs = (recordingSeconds % 60).toString().padStart(2, '0');
+    document.getElementById('recording-timer').textContent = `${mins}:${secs}`;
+}
+
+function stopRecording() {
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        mediaRecorder.stop();
+        mediaRecorder.stream.getTracks().forEach(track => track.stop());
+    }
+
+    clearInterval(recordingTimer);
+
+    // Update UI
+    document.getElementById('record-btn').classList.remove('hidden');
+    document.getElementById('stop-record-btn').classList.add('hidden');
+    document.getElementById('recording-timer').classList.add('hidden');
+
+    showToast('✅ Recording saved!', 'success');
+}
+
+function saveRecording() {
+    const blob = new Blob(recordedChunks, { type: 'audio/webm' });
+    const url = URL.createObjectURL(blob);
+    const timestamp = new Date().toLocaleTimeString();
+
+    const clipContainer = document.createElement('div');
+    clipContainer.className = 'recorded-clip';
+    clipContainer.innerHTML = `
+        <div class="clip-info">
+            <i class="fas fa-microphone"></i>
+            <span>Voice Clip ${timestamp}</span>
+        </div>
+        <audio controls src="${url}"></audio>
+        <button class="btn-add-to-beat" onclick="addVoiceToBeat('${url}')">
+            <i class="fas fa-plus"></i> Add to Beat
+        </button>
+    `;
+
+    document.getElementById('recorded-clips').prepend(clipContainer);
+}
+
+function addVoiceToBeat(url) {
+    AppState.voiceRecordingUrl = url;
+    showToast('Voice added to your beat!', 'success');
+}
+
+// ============================================
+// PIANO KEYBOARD
+// ============================================
+let pianoSynth = null;
+let currentInstrument = 'piano';
+
+const instrumentConfigs = {
+    piano: {
+        oscillator: { type: 'triangle' },
+        envelope: { attack: 0.005, decay: 0.3, sustain: 0.4, release: 1.2 }
+    },
+    synth: {
+        oscillator: { type: 'sawtooth' },
+        envelope: { attack: 0.01, decay: 0.2, sustain: 0.5, release: 0.5 }
+    },
+    bass: {
+        oscillator: { type: 'square' },
+        envelope: { attack: 0.05, decay: 0.4, sustain: 0.6, release: 0.8 }
+    },
+    strings: {
+        oscillator: { type: 'sine' },
+        envelope: { attack: 0.1, decay: 0.5, sustain: 0.7, release: 1.5 }
+    },
+    organ: {
+        oscillator: { type: 'square' },
+        envelope: { attack: 0.02, decay: 0.1, sustain: 1, release: 0.3 }
+    },
+    flute: {
+        oscillator: { type: 'sine' },
+        envelope: { attack: 0.05, decay: 0.2, sustain: 0.6, release: 0.8 }
+    }
+};
+
+const pianoNotes = [
+    { note: 'C4', type: 'white', label: 'C' },
+    { note: 'C#4', type: 'black', label: 'C#' },
+    { note: 'D4', type: 'white', label: 'D' },
+    { note: 'D#4', type: 'black', label: 'D#' },
+    { note: 'E4', type: 'white', label: 'E' },
+    { note: 'F4', type: 'white', label: 'F' },
+    { note: 'F#4', type: 'black', label: 'F#' },
+    { note: 'G4', type: 'white', label: 'G' },
+    { note: 'G#4', type: 'black', label: 'G#' },
+    { note: 'A4', type: 'white', label: 'A' },
+    { note: 'A#4', type: 'black', label: 'A#' },
+    { note: 'B4', type: 'white', label: 'B' },
+    { note: 'C5', type: 'white', label: 'C' }
+];
+
+function initPiano() {
+    const pianoKeys = document.getElementById('piano-keys');
+    const instrumentSelect = document.getElementById('instrument-select');
+
+    // Generate piano keys
+    pianoNotes.forEach((keyData, index) => {
+        const key = document.createElement('div');
+        key.className = `piano-key ${keyData.type}`;
+        key.dataset.note = keyData.note;
+
+        if (keyData.type === 'white') {
+            key.innerHTML = `<span class="key-label">${keyData.label}</span>`;
+        }
+
+        key.addEventListener('mousedown', () => playPianoNote(keyData.note));
+        key.addEventListener('mouseup', () => stopPianoNote(keyData.note));
+        key.addEventListener('mouseleave', () => stopPianoNote(keyData.note));
+
+        // Touch support
+        key.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            playPianoNote(keyData.note);
+        });
+        key.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            stopPianoNote(keyData.note);
+        });
+
+        pianoKeys.appendChild(key);
+    });
+
+    // Instrument selector
+    instrumentSelect.addEventListener('change', (e) => {
+        changeInstrument(e.target.value);
+    });
+
+    // Initialize default instrument
+    changeInstrument('piano');
+
+    // Piano record button
+    document.getElementById('piano-record-btn').addEventListener('click', togglePianoRecord);
+    document.getElementById('piano-clear-btn').addEventListener('click', clearPianoRecording);
+}
+
+function changeInstrument(instrument) {
+    currentInstrument = instrument;
+    const config = instrumentConfigs[instrument];
+
+    if (pianoSynth) {
+        pianoSynth.dispose();
+    }
+
+    pianoSynth = new Tone.PolySynth(Tone.Synth, {
+        oscillator: config.oscillator,
+        envelope: config.envelope,
+        volume: -5
+    }).toDestination();
+
+    showToast(`🎹 ${instrument.charAt(0).toUpperCase() + instrument.slice(1)} loaded!`, 'success');
+}
+
+function playPianoNote(note) {
+    if (!AppState.audioContextStarted) {
+        Tone.start();
+        initAudio();
+    }
+
+    if (pianoSynth) {
+        pianoSynth.triggerAttack(note);
+    }
+
+    // Record the note if recording is active
+    if (isPianoRecording) {
+        recordPianoNote(note, Date.now(), 'start');
+    }
+
+    // Visual feedback
+    const key = document.querySelector(`.piano-key[data-note="${note}"]`);
+    if (key) {
+        key.classList.add('active');
+    }
+
+    // Haptic feedback
+    if (navigator.vibrate) {
+        navigator.vibrate(20);
+    }
+}
+
+function stopPianoNote(note) {
+    if (pianoSynth) {
+        pianoSynth.triggerRelease(note);
+    }
+
+    // Record the note release if recording is active
+    if (isPianoRecording) {
+        recordPianoNote(note, Date.now(), 'stop');
+    }
+
+    // Remove visual feedback
+    const key = document.querySelector(`.piano-key[data-note="${note}"]`);
+    if (key) {
+        key.classList.remove('active');
+    }
+}
+
+let isPianoRecording = false;
+let pianoRecording = []; // Raw events (start/stop)
+let pianoRecordStartTime = 0;
+
+function togglePianoRecord() {
+    const btn = document.getElementById('piano-record-btn');
+
+    if (!isPianoRecording) {
+        isPianoRecording = true;
+        pianoRecording = [];
+        pianoRecordStartTime = Date.now();
+        btn.classList.add('recording');
+        btn.innerHTML = '<i class="fas fa-stop"></i>';
+        showToast('🔴 Recording piano...', 'success');
+    } else {
+        isPianoRecording = false;
+        btn.classList.remove('recording');
+        btn.innerHTML = '<i class="fas fa-circle"></i>';
+
+        // Process raw pianoRecording into pianoRecordingUrl (notes with duration)
+        const processedNotes = [];
+        const activeNotes = {};
+        pianoRecording.forEach(event => {
+            if (event.type === 'start') {
+                activeNotes[event.note] = event.time;
+            } else if (event.type === 'stop' && activeNotes[event.note] !== undefined) {
+                const startTime = activeNotes[event.note];
+                const duration = event.time - startTime;
+                if (duration > 0) { // Only add if duration is positive
+                    processedNotes.push({
+                        note: event.note,
+                        time: startTime,
+                        duration: duration
+                    });
+                }
+                delete activeNotes[event.note];
+            }
+        });
+
+        // Sort by time for correct playback order
+        processedNotes.sort((a, b) => a.time - b.time);
+
+        // Save to AppState for playback
+        if (processedNotes.length > 0) {
+            AppState.pianoRecordingUrl = processedNotes;
+            showToast(`✅ Recorded ${processedNotes.length} notes!`, 'success');
+        } else {
+            AppState.pianoRecordingUrl = null; // Clear if no notes recorded
+            showToast('No notes recorded', 'info');
+        }
+    }
+}
+
+function clearPianoRecording() {
+    pianoRecording = [];
+    AppState.pianoRecordingUrl = null;
+    showToast('Recording cleared', 'success');
+}
+
+// ============================================
+// PLAYBACK INTEGRATION
+// ============================================
+function playVoiceRecording() {
+    if (AppState.voiceRecordingUrl) {
+        // Stop existing player if any
+        if (synths.voicePlayer) {
+            synths.voicePlayer.stop();
+            synths.voicePlayer.dispose();
+        }
+
+        // Create new player
+        synths.voicePlayer = new Tone.Player({
+            url: AppState.voiceRecordingUrl,
+            loop: true,
+            autostart: false
+        }).toDestination();
+
+        // Start when loaded
+        Tone.loaded().then(() => {
+            if (synths.voicePlayer && AppState.isPlaying) {
+                synths.voicePlayer.sync().start(0);
+            }
+        });
+    }
+}
+
+function stopVoiceRecording() {
+    if (synths.voicePlayer) {
+        synths.voicePlayer.unsync().stop();
+        synths.voicePlayer.dispose();
+        synths.voicePlayer = null;
+    }
+}
+
+function schedulePianoPlayback() {
+    // Piano playback is now handled in the playStep function
+    // This function is kept for backwards compatibility
+    if (AppState.pianoRecordingUrl && AppState.pianoRecordingUrl.length > 0) {
+        console.log(`Piano recording ready: ${AppState.pianoRecordingUrl.length} notes`);
+    }
+}
+
+// Add to piano recording when playing notes
+function recordPianoNote(note, time, eventType) {
+    if (isPianoRecording) {
+        pianoRecording.push({
+            note: note,
+            time: time - pianoRecordStartTime,
+            type: eventType // 'start' or 'stop'
+        });
+    }
+}
+
+// Keyboard support for piano
+const keyboardMap = {
+    'a': 'C4', 'w': 'C#4', 's': 'D4', 'e': 'D#4', 'd': 'E4',
+    'f': 'F4', 't': 'F#4', 'g': 'G4', 'y': 'G#4', 'h': 'A4',
+    'u': 'A#4', 'j': 'B4', 'k': 'C5'
+};
+
+document.addEventListener('keydown', (e) => {
+    if (e.target.tagName === 'INPUT') return;
+
+    const note = keyboardMap[e.key.toLowerCase()];
+    if (note) {
+        playPianoNote(note);
+    }
+});
+
+document.addEventListener('keyup', (e) => {
+    const note = keyboardMap[e.key.toLowerCase()];
+    if (note) {
+        stopPianoNote(note);
+    }
+});
+
+// ============================================
 // INITIALIZE
 // ============================================
-document.addEventListener('DOMContentLoaded', init);
+document.addEventListener('DOMContentLoaded', () => {
+    init();
+    initVoiceRecorder();
+    initPiano();
+
+    // Ensure recordings are initialized when audio context starts
+    const originalInitAudio = initAudio;
+    initAudio = function () {
+        originalInitAudio();
+        // Load any existing voice recordings
+        if (AppState.voiceRecordingUrl) {
+            loadVoiceRecordingToBuffer();
+        }
+    };
+});
