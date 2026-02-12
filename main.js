@@ -334,8 +334,7 @@ function extendGrid(newStepCount) {
     generateGrid();
     regenerateStepIndicators();
 
-    // Update grid length display
-    updateGridLengthDisplay();
+
 
     // If piano recording exists, reschedule it with new duration
     if (AppState.pianoRecordingUrl && AppState.pianoRecordingUrl.length > 0) {
@@ -363,30 +362,7 @@ function regenerateStepIndicators() {
     }
 }
 
-function increaseGridLength() {
-    const newSteps = AppState.gridSteps + 4; // Increase by 4 steps
-    if (newSteps <= 32) {
-        extendGrid(newSteps);
-    } else {
-        showToast('Maximum grid length is 32 steps', 'info');
-    }
-}
 
-function decreaseGridLength() {
-    const newSteps = AppState.gridSteps - 4; // Decrease by 4 steps
-    if (newSteps >= 4) {
-        extendGrid(newSteps);
-    } else {
-        showToast('Minimum grid length is 4 steps', 'info');
-    }
-}
-
-function updateGridLengthDisplay() {
-    const display = document.getElementById('grid-length-value');
-    if (display) {
-        display.textContent = `${AppState.gridSteps} steps`;
-    }
-}
 
 function toggleCell(track, step) {
     AppState.grid[track][step] = !AppState.grid[track][step];
@@ -476,9 +452,7 @@ function setupEventListeners() {
         AppState.projectName = e.target.value;
     });
 
-    // Grid length controls
-    document.getElementById('grid-increase-btn').addEventListener('click', increaseGridLength);
-    document.getElementById('grid-decrease-btn').addEventListener('click', decreaseGridLength);
+
 }
 
 function startApp() {
