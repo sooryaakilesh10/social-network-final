@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -9,6 +10,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
+
 <body>
     <!-- App Container -->
     <div id="app" class="app-container">
@@ -121,11 +123,31 @@
                 <div class="step-indicator" data-step="7">8</div>
             </div>
 
+            <!-- Piano Progress Bar -->
+            <div id="piano-progress-container" class="piano-progress-container hidden">
+                <div class="piano-progress-label">
+                    <i class="fas fa-play-circle"></i>
+                    <span>Piano Playback</span>
+                </div>
+                <div class="piano-progress-wrapper">
+                    <div id="piano-progress-bar" class="piano-progress-bar"></div>
+                    <div id="piano-progress-text" class="piano-progress-text">0%</div>
+                </div>
+            </div>
+
             <!-- BPM Control -->
             <div class="bpm-control">
                 <label>BPM</label>
                 <input type="range" id="bpm-slider" min="60" max="180" value="120">
                 <span id="bpm-value">120</span>
+            </div>
+
+            <!-- Grid Length Control -->
+            <div class="grid-length-control">
+                <label>Grid Length</label>
+                <button id="grid-decrease-btn" class="grid-btn">-</button>
+                <span id="grid-length-value">8 steps</span>
+                <button id="grid-increase-btn" class="grid-btn">+</button>
             </div>
 
             <!-- Voice Recorder Section -->
@@ -170,6 +192,7 @@
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
+                <div id="piano-recorded-clips" class="recorded-clips"></div>
             </div>
 
             <!-- Share Button -->
@@ -370,4 +393,5 @@
 
     <script src="main.js"></script>
 </body>
+
 </html>

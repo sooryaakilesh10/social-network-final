@@ -11,22 +11,22 @@
     --teal: #00BFA5;
     --teal-dark: #00897B;
     --teal-light: #1DE9B6;
-    
+
     /* Fun Accent Colors */
     --hot-pink: #FF4081;
     --orange: #FF6D00;
     --purple: #E040FB;
     --cyan: #00E5FF;
     --lime: #76FF03;
-    
+
     /* Background */
     --bg: #FFFDE7;
     --bg-card: #FFFFFF;
-    
+
     /* Text */
     --text-dark: #263238;
     --text-teal: #00695C;
-    
+
     /* Shadows */
     --shadow: 6px 6px 0px #000000;
     --shadow-yellow: 6px 6px 0px #F9A825;
@@ -41,7 +41,8 @@
     user-select: none;
 }
 
-html, body {
+html,
+body {
     height: 100%;
     overflow: hidden;
     font-family: 'Fredoka One', 'Nunito', cursive;
@@ -103,10 +104,23 @@ html, body {
 }
 
 @keyframes wobble {
-    0%, 100% { transform: rotate(-5deg) scale(1); }
-    25% { transform: rotate(5deg) scale(1.05); }
-    50% { transform: rotate(-3deg) scale(1); }
-    75% { transform: rotate(3deg) scale(1.05); }
+
+    0%,
+    100% {
+        transform: rotate(-5deg) scale(1);
+    }
+
+    25% {
+        transform: rotate(5deg) scale(1.05);
+    }
+
+    50% {
+        transform: rotate(-3deg) scale(1);
+    }
+
+    75% {
+        transform: rotate(3deg) scale(1.05);
+    }
 }
 
 .onboarding-content h1 {
@@ -163,8 +177,15 @@ html, body {
 }
 
 @keyframes point {
-    0%, 100% { transform: translateX(-20px) rotate(-10deg); }
-    50% { transform: translateX(20px) rotate(10deg); }
+
+    0%,
+    100% {
+        transform: translateX(-20px) rotate(-10deg);
+    }
+
+    50% {
+        transform: translateX(20px) rotate(10deg);
+    }
 }
 
 .tutorial-step p {
@@ -361,8 +382,15 @@ html, body {
 }
 
 @keyframes bounce-play {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.1); }
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.1);
+    }
 }
 
 /* Genre Selector */
@@ -1035,8 +1063,13 @@ html, body {
 }
 
 @keyframes slideUp {
-    from { transform: translateY(100%); }
-    to { transform: translateY(0); }
+    from {
+        transform: translateY(100%);
+    }
+
+    to {
+        transform: translateY(0);
+    }
 }
 
 .modal-header {
@@ -1342,6 +1375,7 @@ html, body {
         opacity: 0;
         transform: translate(-50%, -20px);
     }
+
     to {
         opacity: 1;
         transform: translate(-50%, 0);
@@ -1381,6 +1415,7 @@ html, body {
 
 /* Touch feedback */
 @media (hover: none) {
+
     .grid-cell:active,
     .btn-primary:active,
     .genre-btn:active,
@@ -1397,7 +1432,7 @@ html, body {
     .sequencer-container {
         max-height: 200px;
     }
-    
+
     .track-label {
         height: 34px;
     }
@@ -1411,7 +1446,7 @@ html, body {
         border-left: 5px solid #000;
         border-right: 5px solid #000;
     }
-    
+
     .sound-categories {
         grid-template-columns: repeat(5, 1fr);
     }
@@ -1435,6 +1470,70 @@ html, body {
     font-size: 1.3rem;
     color: var(--text-dark);
     margin-bottom: 1rem;
+    text-align: center;
+}
+
+.recorder-section h3#bpm-value {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.2rem;
+    color: var(--text-dark);
+    min-width: 50px;
+    text-align: center;
+}
+
+/* Grid Length Control */
+.grid-length-control {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background: var(--bg-card);
+    padding: 1rem 1.5rem;
+    border-radius: 20px;
+    margin-bottom: 1rem;
+    border: 4px solid #000;
+    box-shadow: var(--shadow);
+}
+
+.grid-length-control label {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.1rem;
+    color: var(--text-dark);
+    min-width: 100px;
+}
+
+.grid-length-control .grid-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    border: 3px solid #000;
+    background: var(--yellow);
+    color: #000;
+    font-size: 1.5rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 4px 4px 0px #000;
+    transition: transform 0.1s;
+    font-family: 'Fredoka One', cursive;
+}
+
+.grid-length-control .grid-btn:hover {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0px #000;
+}
+
+.grid-length-control .grid-btn:active {
+    transform: translate(4px, 4px);
+    box-shadow: 0px 0px 0px #000;
+}
+
+#grid-length-value {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.2rem;
+    color: var(--text-dark);
+    min-width: 80px;
     text-align: center;
 }
 
@@ -1464,8 +1563,17 @@ html, body {
 }
 
 @keyframes pulse-record {
-    0%, 100% { transform: scale(1); box-shadow: var(--shadow); }
-    50% { transform: scale(1.05); box-shadow: 8px 8px 0px #000; }
+
+    0%,
+    100% {
+        transform: scale(1);
+        box-shadow: var(--shadow);
+    }
+
+    50% {
+        transform: scale(1.05);
+        box-shadow: 8px 8px 0px #000;
+    }
 }
 
 .btn-record:hover {
@@ -1485,8 +1593,15 @@ html, body {
 }
 
 @keyframes pulse-recording {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.7; }
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.7;
+    }
 }
 
 .btn-stop-record {
@@ -1508,9 +1623,19 @@ html, body {
 }
 
 @keyframes shake-stop {
-    0%, 100% { transform: translateX(0); }
-    25% { transform: translateX(-3px) rotate(-2deg); }
-    75% { transform: translateX(3px) rotate(2deg); }
+
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+
+    25% {
+        transform: translateX(-3px) rotate(-2deg);
+    }
+
+    75% {
+        transform: translateX(3px) rotate(2deg);
+    }
 }
 
 .btn-stop-record:hover {
@@ -1534,8 +1659,17 @@ html, body {
 }
 
 @keyframes blink-timer {
-    0%, 100% { opacity: 1; color: var(--hot-pink); }
-    50% { opacity: 0.5; color: #ff0000; }
+
+    0%,
+    100% {
+        opacity: 1;
+        color: var(--hot-pink);
+    }
+
+    50% {
+        opacity: 0.5;
+        color: #ff0000;
+    }
 }
 
 .recorded-clips {
@@ -1743,7 +1877,7 @@ html, body {
 .piano-key.white.active {
     background: var(--yellow);
     transform: translateY(4px);
-    box-shadow: inset 0 4px 8px rgba(0,0,0,0.3);
+    box-shadow: inset 0 4px 8px rgba(0, 0, 0, 0.3);
 }
 
 .piano-key.black {
@@ -1763,15 +1897,29 @@ html, body {
 .piano-key.black.active {
     background: var(--hot-pink);
     transform: translateY(4px);
-    box-shadow: inset 0 4px 8px rgba(0,0,0,0.5);
+    box-shadow: inset 0 4px 8px rgba(0, 0, 0, 0.5);
 }
 
 /* Position black keys between white keys */
-.piano-key.black:nth-of-type(2) { left: 40px; }
-.piano-key.black:nth-of-type(4) { left: 80px; }
-.piano-key.black:nth-of-type(7) { left: 160px; }
-.piano-key.black:nth-of-type(9) { left: 200px; }
-.piano-key.black:nth-of-type(11) { left: 240px; }
+.piano-key.black:nth-of-type(2) {
+    left: 40px;
+}
+
+.piano-key.black:nth-of-type(4) {
+    left: 80px;
+}
+
+.piano-key.black:nth-of-type(7) {
+    left: 160px;
+}
+
+.piano-key.black:nth-of-type(9) {
+    left: 200px;
+}
+
+.piano-key.black:nth-of-type(11) {
+    left: 240px;
+}
 
 .piano-label {
     font-family: 'Fredoka One', cursive;
@@ -1842,6 +1990,69 @@ html, body {
     box-shadow: 2px 2px 0px #000;
 }
 
+.piano-progress-container {
+    margin: 1rem 0;
+    background: var(--bg);
+    border: 3px solid #000;
+    border-radius: 15px;
+    padding: 0.75rem;
+    box-shadow: 4px 4px 0px #000;
+}
+
+.piano-progress-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    font-family: 'Fredoka One', cursive;
+    font-size: 1rem;
+    color: var(--text-dark);
+}
+
+.piano-progress-label i {
+    color: var(--hot-pink);
+    font-size: 1.2rem;
+}
+
+.piano-progress-wrapper {
+    position: relative;
+    width: 100%;
+    height: 40px;
+    background: var(--bg-card);
+    border: 3px solid #000;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.piano-progress-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--hot-pink), var(--coral));
+    transition: width 0.1s linear;
+    box-shadow: 0 0 10px rgba(255, 105, 180, 0.5);
+}
+
+.piano-progress-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: 'Fredoka One', cursive;
+    font-size: 1rem;
+    color: var(--text-dark);
+    z-index: 1;
+    text-shadow:
+        1px 1px 0 #fff,
+        -1px -1px 0 #fff,
+        1px -1px 0 #fff,
+        -1px 1px 0 #fff;
+    pointer-events: none;
+}
+
 /* ============================================
    RESPONSIVE STYLES FOR RECORDER & PIANO
    ============================================ */
@@ -1850,43 +2061,43 @@ html, body {
     .recorder-section {
         padding: 1rem;
     }
-    
+
     .recorder-controls {
         flex-direction: column;
         align-items: center;
     }
-    
+
     .btn-record,
     .btn-stop-record {
         width: 100%;
         justify-content: center;
     }
-    
+
     .recording-timer {
         font-size: 1.5rem;
     }
-    
+
     .recorded-clip {
         flex-wrap: wrap;
     }
-    
+
     .piano-keys {
         height: 140px;
     }
-    
+
     .piano-key.white {
         width: 35px;
     }
-    
+
     .piano-key.black {
         width: 24px;
         margin-left: -12px;
     }
-    
+
     .piano-container {
         padding: 0.75rem;
     }
-    
+
     .piano-controls {
         flex-wrap: wrap;
     }
@@ -1896,12 +2107,12 @@ html, body {
     .piano-key.white {
         width: 30px;
     }
-    
+
     .piano-key.black {
         width: 20px;
         margin-left: -10px;
     }
-    
+
     .piano-keys {
         height: 120px;
     }

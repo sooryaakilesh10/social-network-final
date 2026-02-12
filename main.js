@@ -11,6 +11,7 @@ const AppState = {
     bpm: 120,
     currentGenre: 'trap',
     grid: Array(8).fill(null).map(() => Array(8).fill(false)),
+    gridSteps: 8, // Dynamic step count, can be extended for longer recordings
     audioContextStarted: false,
     tutorialStep: 0,
     shareStep: 1,
@@ -96,6 +97,8 @@ const StemPacks = [
 // ============================================
 let synths = {};
 let loop = null;
+let pianoPart = null; // Tone.Part for piano recording playback
+let progressAnimationFrame = null; // For smooth progress bar animation
 
 function initAudio() {
     if (AppState.audioContextStarted) return;
@@ -147,9 +150,8 @@ function initAudio() {
         }).toDestination()
     };
 
-    // Voice and piano players for recordings
+    // Voice player for recordings
     synths.voicePlayer = null;
-    synths.pianoLoop = null;
 
     // Set volumes
     synths.kick.volume.value = 0;
@@ -182,33 +184,17 @@ function playStep(time) {
     if (AppState.grid[5][step]) synths.synth.triggerAttackRelease(["C4", "E4", "G4"], "8n", time);
     if (AppState.grid[6][step]) synths.fx.triggerAttackRelease("C5", "8n", time);
 
-    // Play piano recording notes that fall on this step
-    if (AppState.pianoRecordingUrl && AppState.pianoRecordingUrl.length > 0 && pianoSynth) {
-        const stepDuration = (60 / AppState.bpm) * 1000; // Duration of one step in ms
-        const loopDuration = stepDuration * 8; // 8 steps total
-
-        AppState.pianoRecordingUrl.forEach(noteData => {
-            // Calculate which step this note falls on
-            const noteTime = noteData.time % loopDuration;
-            const noteStep = Math.floor(noteTime / stepDuration);
-
-            // Play if this note falls on the current step
-            if (noteStep === step) {
-                const noteOffset = (noteTime % stepDuration) / 1000; // Offset within the step
-                const duration = noteData.duration ? (noteData.duration / 1000) : 0.1;
-                pianoSynth.triggerAttackRelease(noteData.note, duration, time + noteOffset);
-            }
-        });
-    }
+    // Piano recording playback is now handled by Tone.Part (see schedulePianoPlayback)
 
     // Visual feedback
     Tone.Draw.schedule(() => {
         highlightPlayingStep(step);
+        updatePianoProgressBar(step);
     }, time);
 }
 
 function updateStepIndicator() {
-    AppState.currentStep = (AppState.currentStep + 1) % 8;
+    AppState.currentStep = (AppState.currentStep + 1) % AppState.gridSteps;
 }
 
 function highlightPlayingStep(step) {
@@ -220,6 +206,11 @@ function highlightPlayingStep(step) {
         const cellStep = i % 8;
         cell.classList.toggle('playing', cellStep === step);
     });
+}
+
+function updatePianoProgressBar(step) {
+    // Progress bar now updates smoothly via animateProgressBar()
+    // This function is kept for compatibility but doesn't do discrete updates
 }
 
 function togglePlayback() {
@@ -237,11 +228,21 @@ function togglePlayback() {
         document.getElementById('play-btn').classList.add('playing');
         // Play voice recording if available
         playVoiceRecording();
-        // Schedule piano recording playback (now handled in playStep)
-        schedulePianoPlayback();
+        // Start piano part if exists
+        if (pianoPart) {
+            pianoPart.start(0);
+        }
+        // Start smooth progress bar animation
+        startProgressBarAnimation();
     } else {
         Tone.Transport.stop();
         loop.stop();
+        // Stop piano part if exists
+        if (pianoPart) {
+            pianoPart.stop();
+        }
+        // Stop progress bar animation
+        stopProgressBarAnimation();
         document.getElementById('play-btn').innerHTML = '<i class="fas fa-play"></i>';
         document.getElementById('play-btn').classList.remove('playing');
         AppState.currentStep = 0;
@@ -252,6 +253,8 @@ function togglePlayback() {
         document.querySelectorAll('.grid-cell').forEach(cell => {
             cell.classList.remove('playing');
         });
+        // Reset piano progress bar
+        resetPianoProgressBar();
         // Stop voice recording if playing
         stopVoiceRecording();
     }
@@ -286,7 +289,7 @@ function generateGrid() {
     grid.innerHTML = '';
 
     for (let track = 0; track < 8; track++) {
-        for (let step = 0; step < 8; step++) {
+        for (let step = 0; step < AppState.gridSteps; step++) {
             const cell = document.createElement('div');
             cell.className = 'grid-cell';
             cell.dataset.track = track;
@@ -300,6 +303,88 @@ function generateGrid() {
 
             grid.appendChild(cell);
         }
+    }
+}
+
+function extendGrid(newStepCount) {
+    // Ensure within bounds
+    if (newStepCount < 4 || newStepCount > 32) {
+        return;
+    }
+
+    const oldStepCount = AppState.gridSteps;
+
+    // Extend each track in the grid
+    for (let track = 0; track < AppState.grid.length; track++) {
+        if (newStepCount > oldStepCount) {
+            // Extend the grid
+            while (AppState.grid[track].length < newStepCount) {
+                AppState.grid[track].push(false);
+            }
+        } else if (newStepCount < oldStepCount) {
+            // Shrink the grid
+            AppState.grid[track] = AppState.grid[track].slice(0, newStepCount);
+        }
+    }
+
+    // Update grid steps
+    AppState.gridSteps = newStepCount;
+
+    // Regenerate UI
+    generateGrid();
+    regenerateStepIndicators();
+
+    // Update grid length display
+    updateGridLengthDisplay();
+
+    // If piano recording exists, reschedule it with new duration
+    if (AppState.pianoRecordingUrl && AppState.pianoRecordingUrl.length > 0) {
+        schedulePianoPlayback();
+    }
+
+    if (newStepCount !== oldStepCount) {
+        showToast(`Grid ${newStepCount > oldStepCount ? 'extended' : 'shortened'} to ${newStepCount} steps`, 'info');
+    }
+}
+
+function regenerateStepIndicators() {
+    const container = document.querySelector('.step-indicators');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    for (let i = 0; i < AppState.gridSteps; i++) {
+        const indicator = document.createElement('div');
+        indicator.className = 'step-indicator';
+        if (i === 0) indicator.classList.add('active');
+        indicator.dataset.step = i;
+        indicator.textContent = i + 1;
+        container.appendChild(indicator);
+    }
+}
+
+function increaseGridLength() {
+    const newSteps = AppState.gridSteps + 4; // Increase by 4 steps
+    if (newSteps <= 32) {
+        extendGrid(newSteps);
+    } else {
+        showToast('Maximum grid length is 32 steps', 'info');
+    }
+}
+
+function decreaseGridLength() {
+    const newSteps = AppState.gridSteps - 4; // Decrease by 4 steps
+    if (newSteps >= 4) {
+        extendGrid(newSteps);
+    } else {
+        showToast('Minimum grid length is 4 steps', 'info');
+    }
+}
+
+function updateGridLengthDisplay() {
+    const display = document.getElementById('grid-length-value');
+    if (display) {
+        display.textContent = `${AppState.gridSteps} steps`;
     }
 }
 
@@ -390,6 +475,10 @@ function setupEventListeners() {
     document.getElementById('project-name').addEventListener('change', (e) => {
         AppState.projectName = e.target.value;
     });
+
+    // Grid length controls
+    document.getElementById('grid-increase-btn').addEventListener('click', increaseGridLength);
+    document.getElementById('grid-decrease-btn').addEventListener('click', decreaseGridLength);
 }
 
 function startApp() {
@@ -1136,6 +1225,7 @@ function stopPianoNote(note) {
 let isPianoRecording = false;
 let pianoRecording = []; // Raw events (start/stop)
 let pianoRecordStartTime = 0;
+let lastPianoRecording = null; // Store the last processed recording for preview
 
 function togglePianoRecord() {
     const btn = document.getElementById('piano-record-btn');
@@ -1152,7 +1242,7 @@ function togglePianoRecord() {
         btn.classList.remove('recording');
         btn.innerHTML = '<i class="fas fa-circle"></i>';
 
-        // Process raw pianoRecording into pianoRecordingUrl (notes with duration)
+        // Process raw pianoRecording into notes with duration
         const processedNotes = [];
         const activeNotes = {};
         pianoRecording.forEach(event => {
@@ -1175,21 +1265,161 @@ function togglePianoRecord() {
         // Sort by time for correct playback order
         processedNotes.sort((a, b) => a.time - b.time);
 
-        // Save to AppState for playback
+        // Save for preview (don't add to beat yet)
         if (processedNotes.length > 0) {
-            AppState.pianoRecordingUrl = processedNotes;
+            lastPianoRecording = processedNotes;
+            savePianoRecording(processedNotes);
             showToast(`✅ Recorded ${processedNotes.length} notes!`, 'success');
         } else {
-            AppState.pianoRecordingUrl = null; // Clear if no notes recorded
             showToast('No notes recorded', 'info');
         }
     }
 }
 
+function savePianoRecording(processedNotes) {
+    const timestamp = new Date().toLocaleTimeString();
+    const noteCount = processedNotes.length;
+
+    const clipContainer = document.createElement('div');
+    clipContainer.className = 'recorded-clip';
+    clipContainer.innerHTML = `
+        <div class="clip-info">
+            <i class="fas fa-keyboard"></i>
+            <span>Piano Clip ${timestamp} (${noteCount} notes)</span>
+        </div>
+        <button class="btn-add-to-beat" onclick="addPianoToBeat()">
+            <i class="fas fa-plus"></i> Add to Beat
+        </button>
+    `;
+
+    // Clear previous clips and add new one
+    const clipsContainer = document.getElementById('piano-recorded-clips');
+    clipsContainer.innerHTML = '';
+    clipsContainer.appendChild(clipContainer);
+}
+
+function addPianoToBeat() {
+    if (!lastPianoRecording) {
+        showToast('No piano recording found', 'error');
+        return;
+    }
+
+    // Calculate required steps for full recording
+    const stepDuration = (60 / AppState.bpm) * 1000; // Duration of one step in ms
+    const maxTime = Math.max(...lastPianoRecording.map(n => n.time + n.duration));
+    const requiredSteps = Math.ceil(maxTime / stepDuration);
+
+    // Extend grid if recording is longer than current grid
+    if (requiredSteps > AppState.gridSteps) {
+        extendGrid(requiredSteps);
+    }
+
+    // Save recording WITHOUT normalization - keep original timestamps
+    AppState.pianoRecordingUrl = lastPianoRecording;
+
+    // Schedule piano playback with Transport sync
+    schedulePianoPlayback();
+
+    // Show progress bar
+    showPianoProgressBar();
+
+    showToast('🎹 Piano added to beat!', 'success');
+}
+
 function clearPianoRecording() {
     pianoRecording = [];
+    lastPianoRecording = null;
     AppState.pianoRecordingUrl = null;
+
+    // Stop and dispose piano part
+    if (pianoPart) {
+        pianoPart.stop();
+        pianoPart.dispose();
+        pianoPart = null;
+    }
+
+    // Clear preview UI
+    const clipsContainer = document.getElementById('piano-recorded-clips');
+    if (clipsContainer) {
+        clipsContainer.innerHTML = '';
+    }
+
+    // Hide progress bar
+    hidePianoProgressBar();
+
     showToast('Recording cleared', 'success');
+}
+
+// ============================================
+// PIANO PROGRESS BAR FUNCTIONS
+// ============================================
+function showPianoProgressBar() {
+    const container = document.getElementById('piano-progress-container');
+    if (container) {
+        container.classList.remove('hidden');
+        resetPianoProgressBar();
+    }
+}
+
+function hidePianoProgressBar() {
+    const container = document.getElementById('piano-progress-container');
+    if (container) {
+        container.classList.add('hidden');
+    }
+}
+
+function resetPianoProgressBar() {
+    const progressBar = document.getElementById('piano-progress-bar');
+    const progressText = document.getElementById('piano-progress-text');
+
+    if (progressBar) {
+        progressBar.style.width = '0%';
+    }
+    if (progressText) {
+        progressText.textContent = '0%';
+    }
+}
+
+function startProgressBarAnimation() {
+    if (!AppState.pianoRecordingUrl || AppState.pianoRecordingUrl.length === 0) return;
+
+    const progressBar = document.getElementById('piano-progress-bar');
+    const progressText = document.getElementById('piano-progress-text');
+
+    if (!progressBar || !progressText) return;
+
+    // Calculate loop duration
+    const stepDuration = (60 / AppState.bpm); // Duration of one step in seconds
+    const loopDuration = stepDuration * AppState.gridSteps; // Total loop duration in seconds
+
+    function animate() {
+        if (!AppState.isPlaying) return;
+
+        // Get current position in Transport timeline
+        const currentTime = Tone.Transport.seconds;
+
+        // Calculate progress within the loop
+        const timeInLoop = currentTime % loopDuration;
+        const progress = (timeInLoop / loopDuration) * 100;
+
+        // Update progress bar
+        progressBar.style.width = `${progress}%`;
+        progressText.textContent = `${Math.round(progress)}%`;
+
+        // Continue animation
+        progressAnimationFrame = requestAnimationFrame(animate);
+    }
+
+    // Start animation
+    progressAnimationFrame = requestAnimationFrame(animate);
+}
+
+function stopProgressBarAnimation() {
+    if (progressAnimationFrame) {
+        cancelAnimationFrame(progressAnimationFrame);
+        progressAnimationFrame = null;
+    }
+    resetPianoProgressBar();
 }
 
 // ============================================
@@ -1228,11 +1458,50 @@ function stopVoiceRecording() {
 }
 
 function schedulePianoPlayback() {
-    // Piano playback is now handled in the playStep function
-    // This function is kept for backwards compatibility
-    if (AppState.pianoRecordingUrl && AppState.pianoRecordingUrl.length > 0) {
-        console.log(`Piano recording ready: ${AppState.pianoRecordingUrl.length} notes`);
+    // Dispose of existing part if any
+    if (pianoPart) {
+        pianoPart.stop();
+        pianoPart.dispose();
+        pianoPart = null;
     }
+
+    if (!AppState.pianoRecordingUrl || AppState.pianoRecordingUrl.length === 0 || !pianoSynth) {
+        return;
+    }
+
+    // Calculate loop duration based on grid steps
+    const stepDuration = (60 / AppState.bpm); // Duration of one step in seconds
+    const loopDuration = stepDuration * AppState.gridSteps; // Total loop duration in seconds
+
+    // Convert notes to Tone.Part format: [[time, {note, duration}], ...]
+    const partNotes = AppState.pianoRecordingUrl.map(noteData => {
+        const timeInSeconds = noteData.time / 1000; // Convert ms to seconds
+        const durationInSeconds = noteData.duration ? noteData.duration / 1000 : 0.1;
+
+        return [
+            timeInSeconds,
+            {
+                note: noteData.note,
+                duration: durationInSeconds
+            }
+        ];
+    });
+
+    // Create a new Part with the notes
+    pianoPart = new Tone.Part((time, value) => {
+        pianoSynth.triggerAttackRelease(value.note, value.duration, time);
+    }, partNotes);
+
+    // Make the part loop at the loop duration
+    pianoPart.loop = true;
+    pianoPart.loopEnd = loopDuration;
+
+    // Start the part if playback is active
+    if (AppState.isPlaying) {
+        pianoPart.start(0);
+    }
+
+    console.log(`Piano Part created with ${partNotes.length} notes, loop duration: ${loopDuration}s`);
 }
 
 // Add to piano recording when playing notes
