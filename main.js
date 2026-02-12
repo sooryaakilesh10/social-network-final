@@ -1498,8 +1498,9 @@ function startVoiceProgressAnimation() {
         const currentTime = Tone.Transport.seconds;
         const timeInLoop = currentTime % loopDuration;
 
-        // Calculate progress percentage
-        const progress = Math.min((timeInLoop / duration) * 100, 100);
+        // Calculate progress percentage - use modulo to loop the progress bar
+        const timeInVoiceLoop = timeInLoop % duration;
+        const progress = (timeInVoiceLoop / duration) * 100;
 
         progressBar.style.width = `${progress}%`;
 
