@@ -355,6 +355,32 @@ body {
     font-family: 'Fredoka One', cursive;
 }
 
+.btn-clear {
+    background: var(--orange);
+    border: 4px solid #000;
+    color: white;
+    padding: 0.7rem 1.2rem;
+    border-radius: 50px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    box-shadow: var(--shadow);
+    font-family: 'Fredoka One', cursive;
+    transition: transform 0.1s;
+}
+
+.btn-clear:active {
+    transform: translate(3px, 3px);
+    box-shadow: 3px 3px 0px #000;
+}
+
+.btn-clear:hover {
+    background: #FF5722;
+}
+
 .btn-play {
     width: 60px;
     height: 60px;

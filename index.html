@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>LoopFlow - Create & Share Beats</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="confirm-modal.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -71,6 +72,9 @@
                 <div class="studio-actions">
                     <button id="magic-fill-btn" class="btn-magic">
                         <i class="fas fa-magic"></i> Magic Fill
+                    </button>
+                    <button id="clear-grid-btn" class="btn-clear">
+                        <i class="fas fa-trash"></i>
                     </button>
                     <button id="play-btn" class="btn-play">
                         <i class="fas fa-play"></i>
@@ -376,6 +380,25 @@
                     </div>
                 </div>
                 <button class="btn-primary" id="use-sound-btn">Use This Sound</button>
+            </div>
+        </div>
+
+        <!-- Confirmation Modal -->
+        <div id="confirm-modal" class="confirm-modal hidden">
+            <div class="confirm-overlay"></div>
+            <div class="confirm-content">
+                <div class="confirm-icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <h3 id="confirm-message">Are you sure?</h3>
+                <div class="confirm-buttons">
+                    <button id="confirm-cancel" class="btn-confirm-cancel">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button id="confirm-ok" class="btn-confirm-ok">
+                        <i class="fas fa-check"></i> Yes, Clear It!
+                    </button>
+                </div>
             </div>
         </div>
 

@@ -417,6 +417,9 @@ function setupEventListeners() {
     // Magic Fill
     document.getElementById('magic-fill-btn').addEventListener('click', magicFill);
 
+    // Clear Grid
+    document.getElementById('clear-grid-btn').addEventListener('click', clearGrid);
+
     // BPM control
     document.getElementById('bpm-slider').addEventListener('input', (e) => {
         AppState.bpm = parseInt(e.target.value);
@@ -539,6 +542,73 @@ function magicFill() {
     }
 
     showToast('✨ Magic pattern applied!', 'success');
+}
+
+function clearGrid() {
+    // Show custom confirmation dialog
+    showConfirm('Are you sure you want to clear the entire grid? This action cannot be undone.')
+        .then((confirmed) => {
+            if (!confirmed) {
+                return; // User cancelled, do nothing
+            }
+
+            // Clear all cells in the grid
+            for (let track = 0; track < 8; track++) {
+                for (let step = 0; step < AppState.gridSteps; step++) {
+                    AppState.grid[track][step] = false;
+                }
+            }
+
+            // Update UI to reflect cleared grid
+            document.querySelectorAll('.grid-cell').forEach(cell => {
+                cell.classList.remove('active');
+            });
+
+            // Haptic feedback
+            if (navigator.vibrate) {
+                navigator.vibrate([30, 30, 30]);
+            }
+
+            showToast('🗑️ Grid cleared!', 'success');
+        });
+}
+
+// Custom confirmation dialog
+function showConfirm(message) {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('confirm-modal');
+        const messageEl = document.getElementById('confirm-message');
+        const cancelBtn = document.getElementById('confirm-cancel');
+        const okBtn = document.getElementById('confirm-ok');
+
+        messageEl.textContent = message;
+        modal.classList.remove('hidden');
+
+        // Haptic feedback
+        if (navigator.vibrate) {
+            navigator.vibrate(20);
+        }
+
+        const handleCancel = () => {
+            modal.classList.add('hidden');
+            cleanup();
+            resolve(false);
+        };
+
+        const handleOk = () => {
+            modal.classList.add('hidden');
+            cleanup();
+            resolve(true);
+        };
+
+        const cleanup = () => {
+            cancelBtn.removeEventListener('click', handleCancel);
+            okBtn.removeEventListener('click', handleOk);
+        };
+
+        cancelBtn.addEventListener('click', handleCancel);
+        okBtn.addEventListener('click', handleOk);
+    });
 }
 
 // ============================================
