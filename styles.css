@@ -1793,44 +1793,16 @@ body {
 .recorded-clip .clip-actions {
     display: flex;
     gap: 0.5rem;
-}
-
-.recorded-clip .btn-play-clip,
-.recorded-clip .btn-delete-clip {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    border: 3px solid #000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    font-size: 0.9rem;
-    transition: transform 0.1s;
+    margin-top: 0.5rem;
 }
 
 .recorded-clip .btn-play-clip {
-    background: var(--lime);
-    color: #000;
-}
-
-.recorded-clip .btn-delete-clip {
-    background: var(--hot-pink);
-    color: white;
-}
-
-.recorded-clip .btn-play-clip:active,
-.recorded-clip .btn-delete-clip:active {
-    transform: scale(0.9);
-}
-
-.btn-add-to-beat {
-    background: var(--lime);
+    background: var(--cyan);
     color: #000;
     border: 4px solid #000;
-    padding: 0.75rem 1.5rem;
+    padding: 0.6rem 1.2rem;
     border-radius: 50px;
-    font-size: 1rem;
+    font-size: 0.9rem;
     font-weight: 700;
     cursor: pointer;
     display: flex;
@@ -1839,7 +1811,32 @@ body {
     font-family: 'Fredoka One', cursive;
     box-shadow: var(--shadow);
     transition: transform 0.1s;
-    margin-top: 0.5rem;
+    flex: 1;
+    justify-content: center;
+}
+
+.recorded-clip .btn-play-clip:active {
+    transform: translate(3px, 3px);
+    box-shadow: 3px 3px 0px #000;
+}
+
+.btn-add-to-beat {
+    background: var(--lime);
+    color: #000;
+    border: 4px solid #000;
+    padding: 0.6rem 1.2rem;
+    border-radius: 50px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: 'Fredoka One', cursive;
+    box-shadow: var(--shadow);
+    transition: transform 0.1s;
+    flex: 1;
+    justify-content: center;
 }
 
 .btn-add-to-beat:hover {

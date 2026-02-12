@@ -1046,6 +1046,7 @@ function saveRecording() {
     const blob = new Blob(recordedChunks, { type: 'audio/webm' });
     const url = URL.createObjectURL(blob);
     const timestamp = new Date().toLocaleTimeString();
+    const clipId = `clip-${Date.now()}`;
 
     const clipContainer = document.createElement('div');
     clipContainer.className = 'recorded-clip';
@@ -1054,14 +1055,57 @@ function saveRecording() {
             <i class="fas fa-microphone"></i>
             <span>Voice Clip ${timestamp}</span>
         </div>
-        <audio controls src="${url}"></audio>
-        <button class="btn-add-to-beat" onclick="addVoiceToBeat('${url}')">
-            <i class="fas fa-plus"></i> Add to Beat
-        </button>
+        <div class="clip-actions">
+            <button class="btn-play-clip" onclick="playVoiceClip('${url}', '${clipId}')">
+                <i class="fas fa-play"></i> Play
+            </button>
+            <button class="btn-add-to-beat" onclick="addVoiceToBeat('${url}')">
+                <i class="fas fa-plus"></i> Add to Beat
+            </button>
+        </div>
+        <audio id="${clipId}" src="${url}" style="display: none;"></audio>
     `;
 
     document.getElementById('recorded-clips').prepend(clipContainer);
 }
+
+function playVoiceClip(url, clipId) {
+    const audio = document.getElementById(clipId);
+    const allAudios = document.querySelectorAll('.recorded-clip audio');
+
+    // Stop all other playing clips
+    allAudios.forEach(a => {
+        if (a.id !== clipId) {
+            a.pause();
+            a.currentTime = 0;
+        }
+    });
+
+    // Toggle play/pause for this clip
+    if (audio.paused) {
+        audio.play();
+        // Update button to show pause icon
+        const btn = event.target.closest('.btn-play-clip');
+        if (btn) {
+            btn.innerHTML = '<i class="fas fa-pause"></i> Pause';
+        }
+
+        // Reset button when audio ends
+        audio.onended = () => {
+            if (btn) {
+                btn.innerHTML = '<i class="fas fa-play"></i> Play';
+            }
+        };
+    } else {
+        audio.pause();
+        audio.currentTime = 0;
+        const btn = event.target.closest('.btn-play-clip');
+        if (btn) {
+            btn.innerHTML = '<i class="fas fa-play"></i> Play';
+        }
+    }
+}
+
 
 function addVoiceToBeat(url) {
     AppState.voiceRecordingUrl = url;
