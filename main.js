@@ -1065,6 +1065,33 @@ function saveRecording() {
 
 function addVoiceToBeat(url) {
     AppState.voiceRecordingUrl = url;
+
+    // Remove existing voice track if any
+    const existingVoiceTrack = document.getElementById('voice-track-bar');
+    if (existingVoiceTrack) {
+        existingVoiceTrack.remove();
+    }
+
+    // Create new voice track as a full-width bar
+    const voiceTrackBar = document.createElement('div');
+    voiceTrackBar.id = 'voice-track-bar';
+    voiceTrackBar.className = 'voice-track-bar';
+    voiceTrackBar.innerHTML = `
+        <div class="voice-track-content">
+            <div class="voice-track-header">
+                <i class="fas fa-microphone"></i>
+                <span>VOICE</span>
+            </div>
+            <div class="voice-progress-bar-container">
+                <div id="voice-progress-bar" class="voice-progress-bar"></div>
+            </div>
+        </div>
+    `;
+
+    // Insert after the sequencer container
+    const sequencerContainer = document.querySelector('.sequencer-container');
+    sequencerContainer.parentNode.insertBefore(voiceTrackBar, sequencerContainer.nextSibling);
+
     showToast('Voice added to your beat!', 'success');
 }
 
@@ -1444,9 +1471,45 @@ function playVoiceRecording() {
         Tone.loaded().then(() => {
             if (synths.voicePlayer && AppState.isPlaying) {
                 synths.voicePlayer.sync().start(0);
+                startVoiceProgressAnimation();
             }
         });
     }
+}
+
+function startVoiceProgressAnimation() {
+    const progressBar = document.getElementById('voice-progress-bar');
+    if (!progressBar || !synths.voicePlayer) return;
+
+    function updateProgress() {
+        if (!AppState.isPlaying || !synths.voicePlayer) {
+            if (progressBar) progressBar.style.width = '0%';
+            return;
+        }
+
+        // Get the duration of the voice recording
+        const duration = synths.voicePlayer.buffer.duration;
+
+        // Calculate loop duration based on grid steps
+        const stepDuration = 60 / AppState.bpm; // Duration of one step in seconds
+        const loopDuration = stepDuration * AppState.gridSteps; // Total loop duration
+
+        // Get current playback position within the loop
+        const currentTime = Tone.Transport.seconds;
+        const timeInLoop = currentTime % loopDuration;
+
+        // Calculate progress percentage
+        const progress = Math.min((timeInLoop / duration) * 100, 100);
+
+        progressBar.style.width = `${progress}%`;
+
+        // Continue animation if still playing
+        if (AppState.isPlaying) {
+            requestAnimationFrame(updateProgress);
+        }
+    }
+
+    updateProgress();
 }
 
 function stopVoiceRecording() {
@@ -1454,6 +1517,12 @@ function stopVoiceRecording() {
         synths.voicePlayer.unsync().stop();
         synths.voicePlayer.dispose();
         synths.voicePlayer = null;
+    }
+
+    // Reset progress bar
+    const progressBar = document.getElementById('voice-progress-bar');
+    if (progressBar) {
+        progressBar.style.width = '0%';
     }
 }
 
