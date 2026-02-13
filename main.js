@@ -1289,8 +1289,6 @@ function changeInstrument(instrument) {
         envelope: config.envelope,
         volume: -5
     }).toDestination();
-
-    // showToast(`🎹 ${instrument.charAt(0).toUpperCase() + instrument.slice(1)} loaded!`, 'success');
 }
 
 function playPianoNote(note) {
@@ -1635,35 +1633,6 @@ function clearPianoRecording() {
     showToast('Recording cleared', 'success');
 }
 
-// ============================================
-// PIANO PROGRESS BAR FUNCTIONS
-// ============================================
-function showPianoProgressBar() {
-    const container = document.getElementById('piano-progress-container');
-    if (container) {
-        container.classList.remove('hidden');
-        resetPianoProgressBar();
-    }
-}
-
-function hidePianoProgressBar() {
-    const container = document.getElementById('piano-progress-container');
-    if (container) {
-        container.classList.add('hidden');
-    }
-}
-
-function resetPianoProgressBar() {
-    const progressBar = document.getElementById('piano-progress-bar');
-    const progressText = document.getElementById('piano-progress-text');
-
-    if (progressBar) {
-        progressBar.style.width = '0%';
-    }
-    if (progressText) {
-        progressText.textContent = '0%';
-    }
-}
 
 function startProgressBarAnimation() {
     if (!AppState.pianoRecordingUrl || AppState.pianoRecordingUrl.length === 0) return;
@@ -1831,8 +1800,6 @@ function schedulePianoPlayback() {
     if (AppState.isPlaying) {
         pianoPart.start(0);
     }
-
-    console.log(`Piano Part created with ${partNotes.length} notes, loop duration: ${loopDuration}s`);
 }
 
 // Add to piano recording when playing notes
