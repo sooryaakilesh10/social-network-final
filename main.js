@@ -1290,7 +1290,7 @@ function changeInstrument(instrument) {
         volume: -5
     }).toDestination();
 
-    showToast(`🎹 ${instrument.charAt(0).toUpperCase() + instrument.slice(1)} loaded!`, 'success');
+    // showToast(`🎹 ${instrument.charAt(0).toUpperCase() + instrument.slice(1)} loaded!`, 'success');
 }
 
 function playPianoNote(note) {
@@ -1341,6 +1341,95 @@ let isPianoRecording = false;
 let pianoRecording = []; // Raw events (start/stop)
 let pianoRecordStartTime = 0;
 let lastPianoRecording = null; // Store the last processed recording for preview
+
+// Piano Clip Playback Variables
+let currentPianoPreview = null;
+let pianoPreviewPart = null;
+
+function playPianoClip(clipId, btn) {
+    if (!lastPianoRecording || !pianoSynth) {
+        showToast('No piano recording available', 'error');
+        return;
+    }
+
+    // If already playing this clip, stop it
+    if (currentPianoPreview === clipId && pianoPreviewPart) {
+        stopPianoPreview();
+        if (btn) {
+            btn.innerHTML = '<i class="fas fa-play"></i> Play';
+        }
+        return;
+    }
+
+    // Stop any currently playing preview
+    stopPianoPreview();
+
+    // Start audio context if needed
+    if (!AppState.audioContextStarted) {
+        Tone.start();
+        initAudio();
+    }
+
+    // Create a one-shot Part for preview (no loop)
+    const partNotes = lastPianoRecording.map(noteData => {
+        const timeInSeconds = noteData.time / 1000;
+        const durationInSeconds = noteData.duration ? noteData.duration / 1000 : 0.1;
+        return [
+            timeInSeconds,
+            {
+                note: noteData.note,
+                duration: durationInSeconds
+            }
+        ];
+    });
+
+    pianoPreviewPart = new Tone.Part((time, value) => {
+        pianoSynth.triggerAttackRelease(value.note, value.duration, time);
+    }, partNotes);
+
+    // Don't loop for preview
+    pianoPreviewPart.loop = false;
+
+    // Update button to show pause
+    if (btn) {
+        btn.innerHTML = '<i class="fas fa-pause"></i> Pause';
+    }
+
+    // Reset and start Transport from beginning
+    Tone.Transport.stop();
+    Tone.Transport.seconds = 0;
+
+    // Start playback at Transport time 0 (not Tone.now())
+    pianoPreviewPart.start(0);
+    Tone.Transport.start();
+    currentPianoPreview = clipId;
+
+    // Calculate total duration
+    const maxTime = Math.max(...lastPianoRecording.map(n => (n.time + n.duration) / 1000));
+
+    // Stop after the recording finishes
+    setTimeout(() => {
+        stopPianoPreview();
+        if (btn) {
+            btn.innerHTML = '<i class="fas fa-play"></i> Play';
+        }
+    }, (maxTime + 0.5) * 1000); // Add 0.5s buffer
+}
+
+function stopPianoPreview() {
+    if (pianoPreviewPart) {
+        pianoPreviewPart.stop();
+        pianoPreviewPart.dispose();
+        pianoPreviewPart = null;
+    }
+
+    // Only stop transport if main playback isn't active
+    if (!AppState.isPlaying) {
+        Tone.Transport.stop();
+    }
+
+    currentPianoPreview = null;
+}
 
 function togglePianoRecord() {
     const btn = document.getElementById('piano-record-btn');
@@ -1394,6 +1483,7 @@ function togglePianoRecord() {
 function savePianoRecording(processedNotes) {
     const timestamp = new Date().toLocaleTimeString();
     const noteCount = processedNotes.length;
+    const clipId = `piano-clip-${Date.now()}`;
 
     const clipContainer = document.createElement('div');
     clipContainer.className = 'recorded-clip';
@@ -1402,10 +1492,30 @@ function savePianoRecording(processedNotes) {
             <i class="fas fa-keyboard"></i>
             <span>Piano Clip ${timestamp} (${noteCount} notes)</span>
         </div>
-        <button class="btn-add-to-beat" onclick="addPianoToBeat()">
-            <i class="fas fa-plus"></i> Add to Beat
-        </button>
+        <div class="clip-actions">
+            <button class="btn-play-clip" data-clip-id="${clipId}">
+                <i class="fas fa-play"></i> Play
+            </button>
+            <button class="btn-add-to-beat">
+                <i class="fas fa-plus"></i> Add to Beat
+            </button>
+        </div>
     `;
+
+    // Store the clip ID for reference
+    clipContainer.dataset.clipId = clipId;
+
+    // Add event listeners
+    const playBtn = clipContainer.querySelector('.btn-play-clip');
+    const addBtn = clipContainer.querySelector('.btn-add-to-beat');
+
+    playBtn.addEventListener('click', (e) => {
+        playPianoClip(clipId, e.currentTarget);
+    });
+
+    addBtn.addEventListener('click', () => {
+        addPianoToBeat();
+    });
 
     // Clear previous clips and add new one
     const clipsContainer = document.getElementById('piano-recorded-clips');
@@ -1419,24 +1529,75 @@ function addPianoToBeat() {
         return;
     }
 
-    // Calculate required steps for full recording
+    // Calculate grid duration in milliseconds
     const stepDuration = (60 / AppState.bpm) * 1000; // Duration of one step in ms
-    const maxTime = Math.max(...lastPianoRecording.map(n => n.time + n.duration));
-    const requiredSteps = Math.ceil(maxTime / stepDuration);
+    const gridDuration = stepDuration * AppState.gridSteps; // Total grid duration in ms
 
-    // Extend grid if recording is longer than current grid
-    if (requiredSteps > AppState.gridSteps) {
-        extendGrid(requiredSteps);
+    // Cut notes that exceed the grid length
+    const processedNotes = lastPianoRecording
+        .filter(note => note.time < gridDuration) // Keep only notes that start within grid
+        .map(note => {
+            const noteEnd = note.time + note.duration;
+            if (noteEnd > gridDuration) {
+                // Trim duration if it extends beyond grid
+                return {
+                    ...note,
+                    duration: gridDuration - note.time
+                };
+            }
+            return note;
+        });
+
+    if (processedNotes.length === 0) {
+        showToast('⚠️ All notes exceed grid length', 'error');
+        return;
     }
 
-    // Save recording WITHOUT normalization - keep original timestamps
-    AppState.pianoRecordingUrl = lastPianoRecording;
+    // Save recording - it will loop automatically via Tone.Part
+    AppState.pianoRecordingUrl = processedNotes;
+
+    // Remove existing piano track if any
+    const existingPianoTrack = document.getElementById('piano-track-bar');
+    if (existingPianoTrack) {
+        existingPianoTrack.remove();
+    }
+
+    // Create new piano track as a full-width bar (similar to voice track)
+    const pianoTrackBar = document.createElement('div');
+    pianoTrackBar.id = 'piano-track-bar';
+    pianoTrackBar.className = 'piano-track-bar';
+    pianoTrackBar.innerHTML = `
+        <div class="piano-track-content">
+            <div class="piano-track-header">
+                <i class="fas fa-keyboard"></i>
+                <span>PIANO</span>
+            </div>
+            <div class="piano-progress-bar-container-inline">
+                <div id="piano-progress-bar-inline" class="piano-progress-bar-inline"></div>
+            </div>
+        </div>
+    `;
+
+    // Insert after the sequencer container (or after voice track if it exists)
+    const sequencerContainer = document.querySelector('.sequencer-container');
+    const voiceTrack = document.getElementById('voice-track-bar');
+
+    if (voiceTrack) {
+        // Insert after voice track
+        voiceTrack.parentNode.insertBefore(pianoTrackBar, voiceTrack.nextSibling);
+    } else {
+        // Insert after sequencer
+        sequencerContainer.parentNode.insertBefore(pianoTrackBar, sequencerContainer.nextSibling);
+    }
 
     // Schedule piano playback with Transport sync
     schedulePianoPlayback();
 
-    // Show progress bar
-    showPianoProgressBar();
+    // Hide the old progress bar container if it exists
+    const oldProgressContainer = document.getElementById('piano-progress-container');
+    if (oldProgressContainer) {
+        oldProgressContainer.classList.add('hidden');
+    }
 
     showToast('🎹 Piano added to beat!', 'success');
 }
@@ -1459,8 +1620,17 @@ function clearPianoRecording() {
         clipsContainer.innerHTML = '';
     }
 
-    // Hide progress bar
-    hidePianoProgressBar();
+    // Remove piano track bar
+    const pianoTrackBar = document.getElementById('piano-track-bar');
+    if (pianoTrackBar) {
+        pianoTrackBar.remove();
+    }
+
+    // Hide old progress bar container
+    const oldProgressContainer = document.getElementById('piano-progress-container');
+    if (oldProgressContainer) {
+        oldProgressContainer.classList.add('hidden');
+    }
 
     showToast('Recording cleared', 'success');
 }
@@ -1498,10 +1668,9 @@ function resetPianoProgressBar() {
 function startProgressBarAnimation() {
     if (!AppState.pianoRecordingUrl || AppState.pianoRecordingUrl.length === 0) return;
 
-    const progressBar = document.getElementById('piano-progress-bar');
-    const progressText = document.getElementById('piano-progress-text');
+    const progressBar = document.getElementById('piano-progress-bar-inline');
 
-    if (!progressBar || !progressText) return;
+    if (!progressBar) return;
 
     // Calculate loop duration
     const stepDuration = (60 / AppState.bpm); // Duration of one step in seconds
@@ -1519,7 +1688,6 @@ function startProgressBarAnimation() {
 
         // Update progress bar
         progressBar.style.width = `${progress}%`;
-        progressText.textContent = `${Math.round(progress)}%`;
 
         // Continue animation
         progressAnimationFrame = requestAnimationFrame(animate);
@@ -1534,7 +1702,12 @@ function stopProgressBarAnimation() {
         cancelAnimationFrame(progressAnimationFrame);
         progressAnimationFrame = null;
     }
-    resetPianoProgressBar();
+
+    // Reset inline progress bar
+    const progressBar = document.getElementById('piano-progress-bar-inline');
+    if (progressBar) {
+        progressBar.style.width = '0%';
+    }
 }
 
 // ============================================
