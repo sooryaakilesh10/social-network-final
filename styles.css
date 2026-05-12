@@ -1,36 +1,41 @@
-/* LoopFlow - Fun Cartoonish Music Creation App */
-/* Bold Yellow & Teal Theme - Hand-Crafted Feel */
+/* LoopFlow - Premium Youthful Music Creation Studio */
+/* Premium Bright Theme - Glass & Sunshine */
 
-@import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&display=swap');
 
 :root {
-    /* Primary Colors */
-    --yellow: #FFD700;
-    --yellow-dark: #FFC400;
-    --yellow-light: #FFEB3B;
-    --teal: #00BFA5;
-    --teal-dark: #00897B;
-    --teal-light: #1DE9B6;
+    /* Primary Colors - Vibrant Youthful Yellow */
+    --yellow: #FBBF24;
+    --yellow-dark: #D97706;
+    --yellow-light: #FDE68A;
+    --teal: #10B981;
+    --teal-dark: #047857;
+    --teal-light: #6EE7B7;
 
-    /* Fun Accent Colors */
-    --hot-pink: #FF4081;
-    --orange: #FF6D00;
-    --purple: #E040FB;
-    --cyan: #00E5FF;
-    --lime: #76FF03;
+    /* Vibrant Youthful Accents */
+    --hot-pink: #EC4899;
+    --orange: #F97316;
+    --purple: #8B5CF6;
+    --cyan: #06B6D4;
+    --lime: #84CC16;
+    --coral: #F43F5E;
 
     /* Background */
-    --bg: #FFFDE7;
-    --bg-card: #FFFFFF;
+    --bg: #FFFBF0;
+    --bg-card: rgba(255, 255, 255, 0.7);
 
-    /* Text */
-    --text-dark: #263238;
-    --text-teal: #00695C;
+    /* Text - Proper High-Contrast Soft Slate */
+    --text-dark: #1E293B;
+    --text-teal: #475569;
 
-    /* Shadows */
-    --shadow: 6px 6px 0px #000000;
-    --shadow-yellow: 6px 6px 0px #F9A825;
-    --shadow-teal: 6px 6px 0px #00695C;
+    /* Shadows - Soft, Premium, Modern */
+    --shadow: 0 10px 25px rgba(0, 0, 0, 0.06);
+    --shadow-yellow: 0 10px 20px rgba(251, 191, 36, 0.25);
+    --shadow-teal: 0 10px 20px rgba(16, 185, 129, 0.25);
+
+    /* Glass Effect - Light Frost */
+    --glass-border: rgba(0, 0, 0, 0.06);
+    --glass-bg: rgba(255, 255, 255, 0.6);
 }
 
 * {
@@ -45,9 +50,15 @@ html,
 body {
     height: 100%;
     overflow: hidden;
-    font-family: 'Fredoka One', 'Nunito', cursive;
+    font-family: 'Outfit', 'Inter', system-ui, sans-serif;
     background: var(--bg);
+    background-image:
+        radial-gradient(at 100% 0%, rgba(251, 191, 36, 0.1) 0px, transparent 50%),
+        radial-gradient(at 0% 100%, rgba(244, 63, 94, 0.05) 0px, transparent 50%),
+        radial-gradient(at 0% 0%, rgba(16, 185, 129, 0.05) 0px, transparent 50%);
+    background-attachment: fixed;
     color: var(--text-dark);
+    -webkit-font-smoothing: antialiased;
 }
 
 .app-container {
@@ -64,7 +75,7 @@ body {
     left: 0;
     right: 0;
     bottom: 0;
-    background: var(--yellow);
+    background: radial-gradient(circle at center, #FFD666 0%, #FBBF24 100%);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -87,20 +98,22 @@ body {
     width: 140px;
     height: 140px;
     margin: 0 auto 2rem;
-    background: var(--teal);
-    border-radius: 30px;
+    background: #fff;
+    border-radius: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
-    animation: wobble 2s ease-in-out infinite;
-    box-shadow: var(--shadow);
-    border: 5px solid #000;
+    animation: wobble 2.5s ease-in-out infinite;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+    border: none;
     transform: rotate(-5deg);
 }
 
 .logo-pulse i {
-    font-size: 4rem;
-    color: var(--yellow);
+    font-size: 4.5rem;
+    background: linear-gradient(135deg, #FBBF24, #F59E0B);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
 @keyframes wobble {
@@ -124,13 +137,12 @@ body {
 }
 
 .onboarding-content h1 {
-    font-size: 3.5rem;
+    font-size: 3.8rem;
     font-weight: 900;
     margin-bottom: 0.5rem;
-    color: #000;
-    text-shadow: 4px 4px 0 var(--teal);
-    letter-spacing: 2px;
-    font-family: 'Fredoka One', cursive;
+    color: #1E293B;
+    letter-spacing: -1px;
+    font-family: 'Outfit', sans-serif;
 }
 
 .onboarding-content p {
@@ -198,50 +210,58 @@ body {
 .btn-skip {
     background: var(--hot-pink);
     color: white;
-    border: 4px solid #000;
+    border: 1px solid var(--glass-border);
     padding: 1rem 2rem;
     border-radius: 50px;
     font-size: 1.1rem;
     font-weight: 700;
     cursor: pointer;
     box-shadow: var(--shadow);
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', sans-serif;
 }
 
 /* Buttons */
 .btn-primary {
-    background: var(--hot-pink);
+    background: linear-gradient(135deg, var(--hot-pink), #D81B60);
     color: white;
-    border: 4px solid #000;
+    border: 1px solid rgba(255,255,255,0.1);
     padding: 1.2rem 3rem;
     border-radius: 50px;
-    font-size: 1.3rem;
+    font-size: 1.2rem;
     font-weight: 700;
     cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    justify-content: center;
+    gap: 0.6rem;
     margin: 0 auto;
-    box-shadow: var(--shadow);
-    transition: transform 0.1s;
-    font-family: 'Fredoka One', cursive;
+    box-shadow: 0 8px 20px rgba(236, 72, 153, 0.3);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    font-family: 'Outfit', sans-serif;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 25px rgba(236, 72, 153, 0.4);
 }
 
 .btn-primary:active {
-    transform: translate(4px, 4px);
-    box-shadow: 2px 2px 0px #000;
+    transform: scale(0.96);
+    box-shadow: 0 4px 10px rgba(236, 72, 153, 0.3);
 }
 
 .btn-secondary {
     background: var(--cyan);
-    color: #000;
-    border: 4px solid #000;
+    color: var(--text-dark);
+    border: 1px solid var(--glass-border);
     padding: 1rem 2rem;
     border-radius: 50px;
     font-size: 1.1rem;
     font-weight: 700;
     cursor: pointer;
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', sans-serif;
     box-shadow: var(--shadow);
 }
 
@@ -251,40 +271,46 @@ body {
     bottom: 0;
     left: 0;
     right: 0;
-    background: var(--yellow);
+    background: rgba(251, 191, 36, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     display: flex;
     justify-content: space-around;
     padding: 1rem 0;
-    border-top: 5px solid #000;
+    border-top: 1px solid var(--glass-border);
     z-index: 100;
 }
 
 .nav-btn {
     background: none;
     border: none;
-    color: var(--teal-dark);
+    color: #B45309;
+    opacity: 0.6;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 0.3rem;
     font-size: 0.8rem;
-    font-weight: 700;
+    font-weight: 600;
     cursor: pointer;
     padding: 0.5rem 1rem;
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', sans-serif;
+    transition: color 0.3s ease;
 }
 
 .nav-btn i {
     font-size: 1.8rem;
-    transition: transform 0.2s;
+    transition: transform 0.3s ease, filter 0.3s ease;
 }
 
 .nav-btn.active {
     color: var(--hot-pink);
+    opacity: 1;
 }
 
 .nav-btn.active i {
-    transform: scale(1.3) rotate(-10deg);
+    transform: scale(1.1);
+    filter: drop-shadow(0 4px 8px rgba(236, 72, 153, 0.3));
 }
 
 /* Tab Content */
@@ -307,9 +333,11 @@ body {
     align-items: center;
     margin-bottom: 1rem;
     background: var(--bg-card);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     padding: 1rem;
-    border-radius: 20px;
-    border: 4px solid #000;
+    border-radius: 16px;
+    border: 1px solid var(--glass-border);
     box-shadow: var(--shadow);
 }
 
@@ -325,7 +353,7 @@ body {
     font-weight: 700;
     width: 100%;
     outline: none;
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', sans-serif;
 }
 
 .project-date {
@@ -341,7 +369,7 @@ body {
 
 .btn-magic {
     background: var(--purple);
-    border: 4px solid #000;
+    border: 1px solid var(--glass-border);
     color: white;
     padding: 0.7rem 1.2rem;
     border-radius: 50px;
@@ -352,12 +380,12 @@ body {
     align-items: center;
     gap: 0.4rem;
     box-shadow: var(--shadow);
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', sans-serif;
 }
 
 .btn-clear {
     background: var(--orange);
-    border: 4px solid #000;
+    border: 1px solid var(--glass-border);
     color: white;
     padding: 0.7rem 1.2rem;
     border-radius: 50px;
@@ -368,13 +396,13 @@ body {
     align-items: center;
     gap: 0.4rem;
     box-shadow: var(--shadow);
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', sans-serif;
     transition: transform 0.1s;
 }
 
 .btn-clear:active {
     transform: translate(3px, 3px);
-    box-shadow: 3px 3px 0px #000;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.3);
 }
 
 .btn-clear:hover {
@@ -386,8 +414,8 @@ body {
     height: 60px;
     border-radius: 50%;
     background: var(--lime);
-    border: 4px solid #000;
-    color: #000;
+    border: 1px solid var(--glass-border);
+    color: var(--text-dark);
     font-size: 1.5rem;
     cursor: pointer;
     display: flex;
@@ -399,7 +427,7 @@ body {
 
 .btn-play:active {
     transform: translate(3px, 3px);
-    box-shadow: 3px 3px 0px #000;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.3);
 }
 
 .btn-play.playing {
@@ -433,32 +461,37 @@ body {
 }
 
 .genre-btn {
-    background: var(--bg-card);
-    border: 4px solid #000;
+    background: rgba(255,255,255,0.9);
+    border: 1px solid rgba(0,0,0,0.04);
     color: var(--text-dark);
     padding: 0.7rem 1.3rem;
     border-radius: 50px;
-    font-size: 1rem;
+    font-size: 0.95rem;
     font-weight: 700;
     cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 0.4rem;
+    gap: 0.5rem;
     white-space: nowrap;
-    font-family: 'Fredoka One', cursive;
-    box-shadow: var(--shadow);
-    transition: transform 0.1s;
+    font-family: 'Outfit', sans-serif;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.genre-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
 }
 
 .genre-btn:active {
-    transform: translate(3px, 3px);
-    box-shadow: 3px 3px 0px #000;
+    transform: scale(0.95);
 }
 
 .genre-btn.active {
     background: var(--yellow);
-    transform: translate(-2px, -2px);
-    box-shadow: 8px 8px 0px #000;
+    color: #FFF;
+    border-color: transparent;
+    box-shadow: 0 8px 20px rgba(251, 191, 36, 0.3);
 }
 
 /* Sequencer */
@@ -467,9 +500,11 @@ body {
     gap: 0.5rem;
     margin-bottom: 0.5rem;
     background: var(--bg-card);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     padding: 1rem;
     border-radius: 20px;
-    border: 4px solid #000;
+    border: 1px solid var(--glass-border);
     box-shadow: var(--shadow);
 }
 
@@ -485,15 +520,17 @@ body {
     align-items: center;
     font-size: 0.75rem;
     font-weight: 700;
-    color: var(--teal-dark);
+    color: var(--text-teal);
     width: 60px;
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', sans-serif;
 }
 
 .voice-track-bar {
     width: 100%;
     background: var(--bg-card);
-    border: 4px solid #000;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
     border-radius: 20px;
     padding: 1rem;
     margin-bottom: 1rem;
@@ -527,7 +564,7 @@ body {
     font-size: 0.9rem;
     font-weight: 700;
     color: var(--hot-pink);
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', sans-serif;
     min-width: 80px;
 }
 
@@ -540,7 +577,7 @@ body {
     height: 16px;
     background: var(--bg);
     border-radius: 10px;
-    border: 3px solid #000;
+    border: 1px solid var(--glass-border);
     overflow: hidden;
 }
 
@@ -556,7 +593,9 @@ body {
 .piano-track-bar {
     width: 100%;
     background: var(--bg-card);
-    border: 4px solid #000;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
     border-radius: 20px;
     padding: 1rem;
     margin-bottom: 1rem;
@@ -578,7 +617,7 @@ body {
     font-size: 0.9rem;
     font-weight: 700;
     color: var(--purple);
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', sans-serif;
     min-width: 80px;
 }
 
@@ -591,7 +630,7 @@ body {
     height: 16px;
     background: var(--bg);
     border-radius: 10px;
-    border: 3px solid #000;
+    border: 1px solid var(--glass-border);
     overflow: hidden;
 }
 
@@ -613,11 +652,12 @@ body {
 
 .grid-cell {
     aspect-ratio: 1;
-    background: var(--bg);
-    border-radius: 12px;
+    background: #FFF;
+    border-radius: 10px;
     cursor: pointer;
-    transition: all 0.1s;
-    border: 3px solid #000;
+    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid rgba(0,0,0,0.04);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.02);
     position: relative;
     overflow: hidden;
 }
@@ -641,8 +681,9 @@ body {
 }
 
 .grid-cell.active {
-    background: var(--teal);
-    border-color: #000;
+    background: var(--yellow);
+    border-color: transparent;
+    box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
 }
 
 .grid-cell.playing {
@@ -666,18 +707,20 @@ body {
     text-align: center;
     font-size: 0.9rem;
     font-weight: 700;
-    color: var(--teal);
+    color: var(--text-teal);
+    opacity: 0.7;
     padding: 0.5rem;
     border-radius: 12px;
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', sans-serif;
     border: 3px solid transparent;
 }
 
 .step-indicator.active {
     background: var(--yellow);
-    border-color: #000;
+    border-color: transparent;
     box-shadow: var(--shadow-yellow);
-    color: #000;
+    color: #FFF;
+    opacity: 1;
 }
 
 /* BPM Control */
@@ -686,10 +729,12 @@ body {
     align-items: center;
     gap: 1rem;
     background: var(--bg-card);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     padding: 1rem;
     border-radius: 20px;
     margin-bottom: 1rem;
-    border: 4px solid #000;
+    border: 1px solid var(--glass-border);
     box-shadow: var(--shadow);
 }
 
@@ -697,28 +742,33 @@ body {
     font-size: 1.1rem;
     font-weight: 700;
     color: var(--teal-dark);
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', sans-serif;
 }
 
 .bpm-control input[type="range"] {
     flex: 1;
     -webkit-appearance: none;
-    height: 16px;
-    background: var(--bg);
+    height: 8px;
+    background: rgba(0,0,0,0.05);
     border-radius: 10px;
-    border: 3px solid #000;
+    border: none;
     outline: none;
 }
 
 .bpm-control input[type="range"]::-webkit-slider-thumb {
     -webkit-appearance: none;
-    width: 32px;
-    height: 32px;
-    background: var(--yellow);
+    width: 24px;
+    height: 24px;
+    background: linear-gradient(135deg, var(--yellow), #F59E0B);
     border-radius: 50%;
     cursor: pointer;
-    border: 4px solid #000;
-    box-shadow: var(--shadow-yellow);
+    border: 2px solid #FFF;
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+    transition: transform 0.1s ease;
+}
+
+.bpm-control input[type="range"]::-webkit-slider-thumb:active {
+    transform: scale(1.2);
 }
 
 #bpm-value {
@@ -727,15 +777,15 @@ body {
     text-align: right;
     font-size: 1.4rem;
     color: var(--hot-pink);
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', sans-serif;
 }
 
 /* Share Button */
 .btn-share {
     width: 100%;
     background: var(--teal);
-    border: 4px solid #000;
-    color: #000;
+    border: 1px solid var(--glass-border);
+    color: var(--text-dark);
     padding: 1.3rem;
     border-radius: 50px;
     font-size: 1.3rem;
@@ -746,13 +796,13 @@ body {
     justify-content: center;
     gap: 0.5rem;
     box-shadow: var(--shadow);
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', sans-serif;
     transition: transform 0.1s;
 }
 
 .btn-share:active {
     transform: translate(4px, 4px);
-    box-shadow: 2px 2px 0px #000;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
 
 /* Discover Tab */
@@ -764,7 +814,7 @@ body {
     font-size: 2rem;
     margin-bottom: 1rem;
     color: var(--text-dark);
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', sans-serif;
 }
 
 .mood-filter {
@@ -780,7 +830,7 @@ body {
 
 .mood-btn {
     background: var(--bg-card);
-    border: 4px solid #000;
+    border: 1px solid var(--glass-border);
     color: var(--text-dark);
     padding: 0.6rem 1.2rem;
     border-radius: 50px;
@@ -788,14 +838,14 @@ body {
     font-weight: 700;
     cursor: pointer;
     white-space: nowrap;
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', sans-serif;
     box-shadow: var(--shadow);
     transition: transform 0.1s;
 }
 
 .mood-btn:active {
     transform: translate(3px, 3px);
-    box-shadow: 3px 3px 0px #000;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.3);
 }
 
 .mood-btn.active {
@@ -815,7 +865,7 @@ body {
     border-radius: 25px;
     overflow: hidden;
     position: relative;
-    border: 4px solid #000;
+    border: 1px solid var(--glass-border);
     box-shadow: var(--shadow);
 }
 
@@ -826,7 +876,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    border-bottom: 4px solid #000;
+    border-bottom: 1px solid var(--glass-border);
 }
 
 .beat-visualizer canvas {
@@ -836,19 +886,26 @@ body {
 
 .beat-play-overlay {
     position: absolute;
-    width: 80px;
-    height: 80px;
-    background: var(--bg-card);
+    width: 64px;
+    height: 64px;
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     color: var(--hot-pink);
-    font-size: 2rem;
+    font-size: 1.5rem;
     cursor: pointer;
-    border: 4px solid #000;
-    box-shadow: var(--shadow);
-    transition: transform 0.2s;
+    border: 1px solid rgba(255,255,255,0.4);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.beat-play-overlay:hover {
+    transform: scale(1.1);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
 }
 
 .beat-play-overlay:active {
@@ -870,7 +927,7 @@ body {
     font-weight: 700;
     font-size: 1.2rem;
     color: var(--text-dark);
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', sans-serif;
 }
 
 .beat-author {
@@ -896,7 +953,7 @@ body {
     font-size: 1rem;
     font-weight: 700;
     cursor: pointer;
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', sans-serif;
 }
 
 .beat-action-btn.active {
@@ -905,22 +962,22 @@ body {
 
 .remix-btn {
     background: var(--orange);
-    color: #000;
-    border: 4px solid #000;
+    color: var(--text-dark);
+    border: 1px solid var(--glass-border);
     padding: 0.6rem 1.3rem;
     border-radius: 50px;
     font-size: 1rem;
     font-weight: 700;
     cursor: pointer;
     margin-left: auto;
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', sans-serif;
     box-shadow: var(--shadow);
     transition: transform 0.1s;
 }
 
 .remix-btn:active {
     transform: translate(3px, 3px);
-    box-shadow: 3px 3px 0px #000;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.3);
 }
 
 /* Library Tab */
@@ -932,7 +989,7 @@ body {
     font-size: 2rem;
     margin-bottom: 1rem;
     color: var(--text-dark);
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', sans-serif;
 }
 
 .search-bar {
@@ -942,7 +999,7 @@ body {
     align-items: center;
     padding: 1rem;
     gap: 0.75rem;
-    border: 4px solid #000;
+    border: 1px solid var(--glass-border);
     box-shadow: var(--shadow);
 }
 
@@ -958,7 +1015,7 @@ body {
     flex: 1;
     outline: none;
     font-size: 1.1rem;
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', sans-serif;
 }
 
 .search-bar input::placeholder {
@@ -980,14 +1037,14 @@ body {
     padding: 1rem;
     text-align: center;
     cursor: pointer;
-    border: 4px solid #000;
+    border: 1px solid var(--glass-border);
     box-shadow: var(--shadow);
     transition: transform 0.1s;
 }
 
 .category-card:active {
     transform: translate(3px, 3px);
-    box-shadow: 3px 3px 0px #000;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.3);
 }
 
 .category-icon {
@@ -999,9 +1056,9 @@ body {
     align-items: center;
     justify-content: center;
     margin: 0 auto 0.5rem;
-    color: #000;
+    color: var(--text-dark);
     font-size: 1.6rem;
-    border: 3px solid #000;
+    border: 1px solid var(--glass-border);
     box-shadow: var(--shadow-yellow);
 }
 
@@ -1009,7 +1066,7 @@ body {
     font-size: 1rem;
     color: var(--text-dark);
     font-weight: 700;
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', sans-serif;
 }
 
 /* Stem Packs */
@@ -1017,7 +1074,7 @@ body {
     font-size: 1.3rem;
     margin-bottom: 1rem;
     color: var(--text-dark);
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', sans-serif;
 }
 
 .stem-list {
@@ -1034,14 +1091,14 @@ body {
     align-items: center;
     gap: 1rem;
     cursor: pointer;
-    border: 4px solid #000;
+    border: 1px solid var(--glass-border);
     box-shadow: var(--shadow);
     transition: transform 0.1s;
 }
 
 .stem-item:active {
     transform: translate(3px, 3px);
-    box-shadow: 3px 3px 0px #000;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.3);
 }
 
 .stem-cover {
@@ -1054,7 +1111,7 @@ body {
     justify-content: center;
     font-size: 1.8rem;
     color: white;
-    border: 3px solid #000;
+    border: 1px solid var(--glass-border);
     box-shadow: var(--shadow);
 }
 
@@ -1066,7 +1123,7 @@ body {
     font-weight: 700;
     margin-bottom: 0.25rem;
     color: var(--text-dark);
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', sans-serif;
 }
 
 .stem-artist {
@@ -1077,13 +1134,13 @@ body {
 
 .stem-tag {
     background: var(--yellow);
-    color: #000;
+    color: var(--text-dark);
     padding: 0.4rem 1rem;
     border-radius: 50px;
     font-size: 0.8rem;
     font-weight: 700;
-    font-family: 'Fredoka One', cursive;
-    border: 3px solid #000;
+    font-family: 'Outfit', sans-serif;
+    border: 1px solid var(--glass-border);
     box-shadow: var(--shadow-yellow);
 }
 
@@ -1103,8 +1160,8 @@ body {
     justify-content: center;
     margin: 0 auto 1rem;
     font-size: 3rem;
-    color: #000;
-    border: 5px solid #000;
+    color: var(--text-dark);
+    border: 1px solid var(--glass-border);
     box-shadow: var(--shadow);
 }
 
@@ -1112,7 +1169,7 @@ body {
     font-size: 1.6rem;
     margin-bottom: 0.25rem;
     color: var(--text-dark);
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', sans-serif;
 }
 
 .profile-header p {
@@ -1128,7 +1185,7 @@ body {
     background: var(--bg-card);
     border-radius: 20px;
     margin-bottom: 1.5rem;
-    border: 4px solid #000;
+    border: 1px solid var(--glass-border);
     box-shadow: var(--shadow);
 }
 
@@ -1141,7 +1198,7 @@ body {
     font-size: 2.2rem;
     font-weight: 700;
     color: var(--hot-pink);
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', sans-serif;
 }
 
 .stat-label {
@@ -1154,7 +1211,7 @@ body {
     font-size: 1.3rem;
     margin-bottom: 1rem;
     color: var(--text-dark);
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', sans-serif;
 }
 
 .empty-state {
@@ -1163,7 +1220,7 @@ body {
     color: var(--teal);
     background: var(--bg-card);
     border-radius: 20px;
-    border: 4px solid #000;
+    border: 1px solid var(--glass-border);
     box-shadow: var(--shadow);
 }
 
@@ -1192,13 +1249,15 @@ body {
 }
 
 .modal-content {
-    background: var(--bg-card);
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     width: 100%;
     max-height: 85vh;
     border-radius: 30px 30px 0 0;
     padding: 1.5rem;
     animation: slideUp 0.3s ease;
-    border: 5px solid #000;
+    border: 1px solid var(--glass-border);
     border-bottom: none;
 }
 
@@ -1222,13 +1281,13 @@ body {
 .modal-header h3 {
     font-size: 1.5rem;
     color: var(--text-dark);
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', sans-serif;
 }
 
 .btn-close {
     background: var(--yellow);
-    border: 3px solid #000;
-    color: #000;
+    border: 1px solid var(--glass-border);
+    color: var(--text-dark);
     font-size: 1.2rem;
     cursor: pointer;
     padding: 0.5rem;
@@ -1252,7 +1311,7 @@ body {
     border-radius: 20px;
     margin-bottom: 1rem;
     overflow: hidden;
-    border: 4px solid #000;
+    border: 1px solid var(--glass-border);
     box-shadow: var(--shadow);
 }
 
@@ -1264,8 +1323,8 @@ body {
 .btn-play-large {
     width: 100%;
     background: var(--lime);
-    border: 4px solid #000;
-    color: #000;
+    border: 1px solid var(--glass-border);
+    color: var(--text-dark);
     padding: 1.2rem;
     border-radius: 50px;
     font-size: 1.2rem;
@@ -1275,7 +1334,7 @@ body {
     justify-content: center;
     gap: 0.5rem;
     font-weight: 700;
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', sans-serif;
     box-shadow: var(--shadow);
 }
 
@@ -1289,19 +1348,19 @@ body {
     color: var(--text-dark);
     font-size: 1.1rem;
     font-weight: 700;
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', sans-serif;
 }
 
 .form-group input {
     width: 100%;
     background: var(--bg);
-    border: 4px solid #000;
+    border: 1px solid var(--glass-border);
     color: var(--text-dark);
     padding: 1rem;
     border-radius: 15px;
     font-size: 1.1rem;
     outline: none;
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', sans-serif;
 }
 
 .duet-toggle {
@@ -1314,7 +1373,7 @@ body {
 .duet-toggle label {
     font-weight: 700;
     color: var(--text-dark);
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', sans-serif;
 }
 
 .duet-toggle input[type="checkbox"] {
@@ -1325,7 +1384,7 @@ body {
     border-radius: 20px;
     position: relative;
     cursor: pointer;
-    border: 4px solid #000;
+    border: 1px solid var(--glass-border);
 }
 
 .duet-toggle input[type="checkbox"]::after {
@@ -1338,7 +1397,7 @@ body {
     top: 2px;
     left: 2px;
     transition: all 0.2s;
-    border: 3px solid #000;
+    border: 1px solid var(--glass-border);
 }
 
 .duet-toggle input[type="checkbox"]:checked {
@@ -1357,7 +1416,7 @@ body {
 
 .export-btn {
     background: var(--bg-card);
-    border: 4px solid #000;
+    border: 1px solid var(--glass-border);
     color: var(--text-dark);
     padding: 1.2rem;
     border-radius: 20px;
@@ -1367,7 +1426,7 @@ body {
     cursor: pointer;
     font-size: 1.1rem;
     font-weight: 700;
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', sans-serif;
     box-shadow: var(--shadow);
     transition: transform 0.1s;
 }
@@ -1378,7 +1437,7 @@ body {
 
 .export-btn:active {
     transform: translate(3px, 3px);
-    box-shadow: 3px 3px 0px #000;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.3);
 }
 
 .modal-footer {
@@ -1404,7 +1463,7 @@ body {
     background: var(--bg);
     border-radius: 50%;
     transition: all 0.3s;
-    border: 3px solid #000;
+    border: 1px solid var(--glass-border);
 }
 
 .progress-dot.active {
@@ -1420,12 +1479,14 @@ body {
     bottom: 0;
     left: 0;
     right: 0;
-    background: var(--bg-card);
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     border-radius: 30px 30px 0 0;
     padding: 1rem 1.5rem 2rem;
     z-index: 400;
     animation: slideUp 0.3s ease;
-    border: 5px solid #000;
+    border: 1px solid var(--glass-border);
     border-bottom: none;
 }
 
@@ -1439,13 +1500,13 @@ body {
     background: var(--yellow);
     border-radius: 4px;
     margin: 0 auto 1rem;
-    border: 2px solid #000;
+    border: 1px solid var(--glass-border);
 }
 
 .sheet-content h3 {
     margin-bottom: 1rem;
     color: var(--text-dark);
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', sans-serif;
     font-size: 1.4rem;
 }
 
@@ -1465,15 +1526,15 @@ body {
     align-items: center;
     justify-content: center;
     font-size: 2rem;
-    color: #000;
-    border: 4px solid #000;
+    color: var(--text-dark);
+    border: 1px solid var(--glass-border);
     box-shadow: var(--shadow-yellow);
 }
 
 .sound-details h4 {
     margin-bottom: 0.25rem;
     color: var(--text-dark);
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', sans-serif;
     font-size: 1.3rem;
 }
 
@@ -1506,8 +1567,8 @@ body {
     align-items: center;
     gap: 0.75rem;
     font-weight: 700;
-    font-family: 'Fredoka One', cursive;
-    border: 4px solid #000;
+    font-family: 'Outfit', sans-serif;
+    border: 1px solid var(--glass-border);
 }
 
 @keyframes toastIn {
@@ -1550,7 +1611,7 @@ body {
 ::-webkit-scrollbar-thumb {
     background: var(--yellow);
     border-radius: 4px;
-    border: 2px solid #000;
+    border: 1px solid var(--glass-border);
 }
 
 /* Touch feedback */
@@ -1583,8 +1644,8 @@ body {
     .app-container {
         max-width: 480px;
         margin: 0 auto;
-        border-left: 5px solid #000;
-        border-right: 5px solid #000;
+        border-left: 1px solid var(--glass-border);
+        border-right: 1px solid var(--glass-border);
     }
 
     .sound-categories {
@@ -1598,7 +1659,9 @@ body {
 
 .recorder-section {
     background: var(--bg-card);
-    border: 4px solid #000;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
     border-radius: 20px;
     padding: 1.5rem;
     margin-bottom: 1rem;
@@ -1606,7 +1669,7 @@ body {
 }
 
 .recorder-section h3 {
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', sans-serif;
     font-size: 1.3rem;
     color: var(--text-dark);
     margin-bottom: 1rem;
@@ -1614,7 +1677,7 @@ body {
 }
 
 .recorder-section h3#bpm-value {
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', sans-serif;
     font-size: 1.2rem;
     color: var(--text-dark);
     min-width: 50px;
@@ -1630,12 +1693,12 @@ body {
     padding: 1rem 1.5rem;
     border-radius: 20px;
     margin-bottom: 1rem;
-    border: 4px solid #000;
+    border: 1px solid var(--glass-border);
     box-shadow: var(--shadow);
 }
 
 .grid-length-control label {
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', sans-serif;
     font-size: 1.1rem;
     color: var(--text-dark);
     min-width: 100px;
@@ -1645,32 +1708,32 @@ body {
     width: 40px;
     height: 40px;
     border-radius: 10px;
-    border: 3px solid #000;
+    border: 1px solid var(--glass-border);
     background: var(--yellow);
-    color: #000;
+    color: var(--text-dark);
     font-size: 1.5rem;
     font-weight: 700;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 4px 4px 0px #000;
+    box-shadow: 0 3px 16px rgba(0,0,0,0.3);
     transition: transform 0.1s;
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', sans-serif;
 }
 
 .grid-length-control .grid-btn:hover {
     transform: translate(2px, 2px);
-    box-shadow: 2px 2px 0px #000;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
 
 .grid-length-control .grid-btn:active {
     transform: translate(4px, 4px);
-    box-shadow: 0px 0px 0px #000;
+    box-shadow: none;
 }
 
 #grid-length-value {
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', sans-serif;
     font-size: 1.2rem;
     color: var(--text-dark);
     min-width: 80px;
@@ -1687,7 +1750,7 @@ body {
 .btn-record {
     background: var(--hot-pink);
     color: white;
-    border: 4px solid #000;
+    border: 1px solid var(--glass-border);
     padding: 1rem 2rem;
     border-radius: 50px;
     font-size: 1.1rem;
@@ -1696,7 +1759,7 @@ body {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', sans-serif;
     box-shadow: var(--shadow);
     transition: transform 0.1s;
     animation: pulse-record 1.5s ease-in-out infinite;
@@ -1712,19 +1775,19 @@ body {
 
     50% {
         transform: scale(1.05);
-        box-shadow: 8px 8px 0px #000;
+        box-shadow: 0 6px 24px rgba(0,0,0,0.4);
     }
 }
 
 .btn-record:hover {
     animation: none;
     transform: translate(2px, 2px);
-    box-shadow: 4px 4px 0px #000;
+    box-shadow: 0 3px 16px rgba(0,0,0,0.3);
 }
 
 .btn-record:active {
     transform: translate(4px, 4px);
-    box-shadow: 2px 2px 0px #000;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
 
 .btn-record.recording {
@@ -1747,7 +1810,7 @@ body {
 .btn-stop-record {
     background: var(--coral);
     color: white;
-    border: 4px solid #000;
+    border: 1px solid var(--glass-border);
     padding: 1rem 2rem;
     border-radius: 50px;
     font-size: 1.1rem;
@@ -1756,7 +1819,7 @@ body {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', sans-serif;
     box-shadow: var(--shadow);
     transition: transform 0.1s;
     animation: shake-stop 0.5s ease-in-out infinite;
@@ -1781,17 +1844,17 @@ body {
 .btn-stop-record:hover {
     animation: none;
     transform: translate(2px, 2px);
-    box-shadow: 4px 4px 0px #000;
+    box-shadow: 0 3px 16px rgba(0,0,0,0.3);
 }
 
 .btn-stop-record:active {
     transform: translate(4px, 4px);
-    box-shadow: 2px 2px 0px #000;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
 
 .recording-timer {
     text-align: center;
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', sans-serif;
     font-size: 2rem;
     color: var(--hot-pink);
     margin-bottom: 1rem;
@@ -1823,19 +1886,19 @@ body {
 
 .recorded-clip {
     background: var(--bg);
-    border: 3px solid #000;
+    border: 1px solid var(--glass-border);
     border-radius: 15px;
     padding: 0.75rem 1rem;
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    box-shadow: 4px 4px 0px #000;
+    box-shadow: 0 3px 16px rgba(0,0,0,0.3);
     transition: transform 0.1s;
 }
 
 .recorded-clip:hover {
     transform: translate(2px, 2px);
-    box-shadow: 2px 2px 0px #000;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
 
 .recorded-clip .clip-icon {
@@ -1846,9 +1909,9 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 3px solid #000;
+    border: 1px solid var(--glass-border);
     font-size: 1.2rem;
-    color: #000;
+    color: var(--text-dark);
 }
 
 .recorded-clip .clip-info {
@@ -1856,7 +1919,7 @@ body {
 }
 
 .recorded-clip .clip-name {
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', sans-serif;
     font-size: 0.95rem;
     color: var(--text-dark);
 }
@@ -1875,8 +1938,8 @@ body {
 
 .recorded-clip .btn-play-clip {
     background: var(--cyan);
-    color: #000;
-    border: 4px solid #000;
+    color: var(--text-dark);
+    border: 1px solid var(--glass-border);
     padding: 0.6rem 1.2rem;
     border-radius: 50px;
     font-size: 0.9rem;
@@ -1885,7 +1948,7 @@ body {
     display: flex;
     align-items: center;
     gap: 0.4rem;
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', sans-serif;
     box-shadow: var(--shadow);
     transition: transform 0.1s;
     flex: 1;
@@ -1894,13 +1957,13 @@ body {
 
 .recorded-clip .btn-play-clip:active {
     transform: translate(3px, 3px);
-    box-shadow: 3px 3px 0px #000;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.3);
 }
 
 .btn-add-to-beat {
     background: var(--lime);
-    color: #000;
-    border: 4px solid #000;
+    color: var(--text-dark);
+    border: 1px solid var(--glass-border);
     padding: 0.6rem 1.2rem;
     border-radius: 50px;
     font-size: 0.9rem;
@@ -1909,7 +1972,7 @@ body {
     display: flex;
     align-items: center;
     gap: 0.4rem;
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', sans-serif;
     box-shadow: var(--shadow);
     transition: transform 0.1s;
     flex: 1;
@@ -1918,12 +1981,12 @@ body {
 
 .btn-add-to-beat:hover {
     transform: translate(2px, 2px);
-    box-shadow: 4px 4px 0px #000;
+    box-shadow: 0 3px 16px rgba(0,0,0,0.3);
 }
 
 .btn-add-to-beat:active {
     transform: translate(4px, 4px);
-    box-shadow: 2px 2px 0px #000;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
 
 /* ============================================
@@ -1932,7 +1995,9 @@ body {
 
 .piano-section {
     background: var(--bg-card);
-    border: 4px solid #000;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
     border-radius: 20px;
     padding: 1rem;
     margin-bottom: 1rem;
@@ -1949,31 +2014,31 @@ body {
 }
 
 .piano-header h3 {
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', sans-serif;
     font-size: 1.2rem;
     color: var(--text-dark);
 }
 
 .instrument-select {
     background: var(--yellow);
-    border: 3px solid #000;
+    border: 1px solid var(--glass-border);
     border-radius: 50px;
     padding: 0.5rem 1rem;
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', sans-serif;
     font-size: 0.9rem;
-    color: #000;
+    color: var(--text-dark);
     cursor: pointer;
-    box-shadow: 4px 4px 0px #000;
+    box-shadow: 0 3px 16px rgba(0,0,0,0.3);
     outline: none;
 }
 
 .instrument-select:focus {
-    box-shadow: 2px 2px 0px #000;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
 
 .piano-container {
     background: #1a1a2e;
-    border: 4px solid #000;
+    border: 1px solid var(--glass-border);
     border-radius: 15px;
     padding: 1rem;
     overflow-x: auto;
@@ -1992,7 +2057,7 @@ body {
     position: relative;
     cursor: pointer;
     transition: all 0.1s;
-    border: 3px solid #000;
+    border: 1px solid var(--glass-border);
     display: flex;
     align-items: flex-end;
     justify-content: center;
@@ -2059,7 +2124,7 @@ body {
 }
 
 .piano-label {
-    font-family: 'Fredoka One', cursive;
+    font-family: 'Outfit', sans-serif;
     font-size: 0.7rem;
     color: #666;
     pointer-events: none;
@@ -2071,7 +2136,7 @@ body {
 }
 
 .piano-key.active .piano-label {
-    color: #000;
+    color: var(--text-dark);
 }
 
 .piano-controls {
@@ -2086,7 +2151,7 @@ body {
 .btn-piano-record {
     background: var(--hot-pink);
     color: white;
-    border: 3px solid #000;
+    border: 1px solid var(--glass-border);
     padding: 0.6rem 1.2rem;
     border-radius: 50px;
     font-size: 0.9rem;
@@ -2095,8 +2160,8 @@ body {
     display: flex;
     align-items: center;
     gap: 0.4rem;
-    font-family: 'Fredoka One', cursive;
-    box-shadow: 4px 4px 0px #000;
+    font-family: 'Outfit', sans-serif;
+    box-shadow: 0 3px 16px rgba(0,0,0,0.3);
     transition: transform 0.1s;
 }
 
@@ -2107,7 +2172,7 @@ body {
 .btn-piano-clear {
     background: var(--coral);
     color: white;
-    border: 3px solid #000;
+    border: 1px solid var(--glass-border);
     padding: 0.6rem 1.2rem;
     border-radius: 50px;
     font-size: 0.9rem;
@@ -2116,15 +2181,15 @@ body {
     display: flex;
     align-items: center;
     gap: 0.4rem;
-    font-family: 'Fredoka One', cursive;
-    box-shadow: 4px 4px 0px #000;
+    font-family: 'Outfit', sans-serif;
+    box-shadow: 0 3px 16px rgba(0,0,0,0.3);
     transition: transform 0.1s;
 }
 
 .btn-piano-record:active,
 .btn-piano-clear:active {
     transform: translate(2px, 2px);
-    box-shadow: 2px 2px 0px #000;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
 
 /* ============================================
@@ -2189,5 +2254,1792 @@ body {
 
     .piano-keys {
         height: 120px;
+    }
+}
+
+/* ============================================
+   MODERN POLISH PASS
+   ============================================ */
+
+:root {
+    --surface: rgba(255, 255, 255, 0.88);
+    --surface-strong: #ffffff;
+    --surface-muted: #f5f7fb;
+    --border-soft: rgba(15, 23, 42, 0.1);
+    --border-strong: rgba(15, 23, 42, 0.16);
+    --ink: #111827;
+    --ink-muted: #64748b;
+    --accent: #2563eb;
+    --accent-strong: #1d4ed8;
+    --success: #059669;
+    --warning: #d97706;
+    --danger: #e11d48;
+    --radius-panel: 16px;
+    --radius-card: 8px;
+    --radius-control: 10px;
+    --shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+    --shadow-soft: 0 8px 24px rgba(15, 23, 42, 0.07);
+    --shadow-focus: 0 0 0 4px rgba(37, 99, 235, 0.14);
+}
+
+body {
+    background:
+        linear-gradient(135deg, rgba(37, 99, 235, 0.08), transparent 34%),
+        linear-gradient(315deg, rgba(5, 150, 105, 0.08), transparent 32%),
+        #f6f8fc;
+    color: var(--ink);
+}
+
+button,
+input,
+select {
+    font: inherit;
+}
+
+button,
+.category-card,
+.stem-item,
+.beat-play-overlay,
+.grid-cell,
+.piano-key {
+    transition:
+        transform 160ms ease,
+        box-shadow 160ms ease,
+        background-color 160ms ease,
+        border-color 160ms ease,
+        color 160ms ease;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+    outline: none;
+    box-shadow: var(--shadow-focus);
+}
+
+.app-container {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.tab-content {
+    padding: 1.25rem;
+    padding-bottom: 108px;
+}
+
+.studio-header,
+.sequencer-container,
+.bpm-control,
+.recorder-section,
+.piano-section,
+.profile-stats,
+.empty-state,
+.voice-track-bar,
+.piano-track-bar,
+.search-bar {
+    background: var(--surface);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-panel);
+    box-shadow: var(--shadow-soft);
+}
+
+.studio-header {
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1.1rem;
+}
+
+.project-name-input {
+    color: var(--ink);
+    font-size: 1.35rem;
+    font-weight: 800;
+    line-height: 1.15;
+}
+
+.project-date,
+.beat-author,
+.stem-artist,
+.profile-header p,
+.stat-label,
+.sound-details p,
+.search-bar input::placeholder {
+    color: var(--ink-muted);
+}
+
+.studio-actions {
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-primary,
+.btn-secondary,
+.btn-magic,
+.btn-clear,
+.btn-share,
+.btn-play-large,
+.btn-record,
+.btn-stop-record,
+.btn-piano-record,
+.btn-piano-clear,
+.btn-add-to-beat,
+.recorded-clip .btn-play-clip,
+.remix-btn,
+.mood-btn,
+.genre-btn,
+.export-btn,
+.btn-skip,
+.btn-confirm-cancel,
+.btn-confirm-ok {
+    border-radius: var(--radius-control);
+    border: 1px solid var(--border-soft);
+    box-shadow: var(--shadow-soft);
+}
+
+.btn-primary,
+.btn-magic,
+.btn-confirm-ok {
+    background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+    color: #fff;
+}
+
+.btn-secondary,
+.btn-confirm-cancel,
+.recorded-clip .btn-play-clip {
+    background: var(--surface-muted);
+    color: var(--ink);
+}
+
+.btn-clear,
+.btn-piano-clear,
+.btn-stop-record {
+    background: var(--danger);
+    color: #fff;
+}
+
+.btn-share,
+.btn-play-large,
+.btn-add-to-beat {
+    background: var(--success);
+    color: #fff;
+}
+
+.btn-record,
+.btn-piano-record {
+    background: var(--danger);
+    color: #fff;
+}
+
+.btn-play {
+    background: var(--accent);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    box-shadow: 0 12px 30px rgba(37, 99, 235, 0.24);
+}
+
+.btn-play.playing {
+    background: var(--danger);
+    animation: none;
+}
+
+.btn-magic:hover,
+.btn-share:hover,
+.btn-play:hover,
+.btn-primary:hover,
+.category-card:hover,
+.stem-item:hover,
+.beat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+}
+
+.btn-clear:active,
+.btn-play:active,
+.btn-share:active,
+.mood-btn:active,
+.remix-btn:active,
+.category-card:active,
+.stem-item:active,
+.recorded-clip .btn-play-clip:active,
+.btn-add-to-beat:active,
+.btn-piano-record:active,
+.btn-piano-clear:active,
+.export-btn:active {
+    transform: scale(0.98);
+    box-shadow: var(--shadow-soft);
+}
+
+.main-nav {
+    left: 50%;
+    right: auto;
+    bottom: 18px;
+    width: min(440px, calc(100% - 28px));
+    transform: translateX(-50%);
+    padding: 0.45rem;
+    background: rgba(255, 255, 255, 0.86);
+    border: 1px solid var(--border-soft);
+    border-radius: 18px;
+    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.16);
+}
+
+.nav-btn {
+    flex: 1;
+    min-width: 0;
+    color: var(--ink-muted);
+    opacity: 1;
+    border-radius: 12px;
+    padding: 0.65rem 0.35rem;
+}
+
+.nav-btn i {
+    font-size: 1.2rem;
+}
+
+.nav-btn span {
+    font-size: 0.72rem;
+}
+
+.nav-btn.active {
+    background: #eef4ff;
+    color: var(--accent);
+}
+
+.nav-btn.active i {
+    filter: none;
+    transform: none;
+}
+
+.genre-selector,
+.mood-filter {
+    gap: 0.55rem;
+}
+
+.genre-btn,
+.mood-btn {
+    background: var(--surface-strong);
+    color: var(--ink-muted);
+    padding: 0.66rem 0.95rem;
+}
+
+.genre-btn.active {
+    background: var(--genre-color, var(--accent));
+    color: #fff;
+    box-shadow: 0 10px 24px color-mix(in srgb, var(--genre-color, var(--accent)) 28%, transparent);
+}
+
+.mood-btn.active {
+    background: var(--ink);
+    color: #fff;
+}
+
+.sequencer-container {
+    overflow-x: auto;
+}
+
+.track-label {
+    color: var(--ink-muted);
+    font-size: 0.68rem;
+    letter-spacing: 0;
+    width: 64px;
+}
+
+.sequencer-grid {
+    min-width: 292px;
+}
+
+.grid-cell {
+    min-width: 34px;
+    background: #edf2f7;
+    border: 1px solid #dbe3ee;
+    border-radius: var(--radius-card);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.grid-cell::after {
+    background: #fff;
+}
+
+.grid-cell.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    box-shadow: 0 7px 18px rgba(37, 99, 235, 0.24);
+}
+
+.grid-cell.playing {
+    background: var(--danger);
+    border-color: var(--danger);
+    box-shadow: 0 0 0 4px rgba(225, 29, 72, 0.12);
+}
+
+.step-indicators {
+    display: flex;
+    gap: 0.4rem;
+    margin: -0.1rem 0 1rem 74px;
+    padding: 0;
+}
+
+.step-indicator {
+    flex: 1 1 0;
+    min-width: 28px;
+    padding: 0.35rem 0.2rem;
+    border-radius: var(--radius-card);
+    color: var(--ink-muted);
+    border: 1px solid transparent;
+}
+
+.step-indicator.active {
+    background: var(--ink);
+    color: #fff;
+    box-shadow: none;
+}
+
+.bpm-control label {
+    color: var(--ink);
+}
+
+.bpm-control input[type="range"] {
+    background: linear-gradient(90deg, var(--accent), #dbeafe);
+}
+
+.bpm-control input[type="range"]::-webkit-slider-thumb {
+    background: #fff;
+    border: 3px solid var(--accent);
+    box-shadow: 0 5px 16px rgba(37, 99, 235, 0.24);
+}
+
+#bpm-value {
+    color: var(--accent);
+}
+
+.recorder-section h3,
+.piano-header h3,
+.stem-packs h3,
+.my-beats h3,
+.discover-header h2,
+.library-header h2,
+.profile-header h2 {
+    color: var(--ink);
+    letter-spacing: 0;
+}
+
+.recorder-section h3,
+.piano-header {
+    text-align: left;
+}
+
+.piano-header {
+    border-bottom: 1px solid var(--border-soft);
+    gap: 0.75rem;
+}
+
+.instrument-select {
+    background: var(--surface-muted);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-control);
+    box-shadow: none;
+}
+
+.piano-container {
+    background: #0f172a;
+    border-color: rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius-card);
+}
+
+.piano-key.white {
+    border-radius: 0 0 6px 6px;
+}
+
+.piano-key.black {
+    border-radius: 0 0 5px 5px;
+}
+
+.piano-controls {
+    align-items: center;
+    border-top: 1px solid var(--border-soft);
+}
+
+.piano-label {
+    color: var(--ink-muted);
+    font-weight: 700;
+}
+
+.beat-card,
+.category-card,
+.stem-item,
+.recorded-clip,
+.export-btn {
+    background: var(--surface-strong);
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-soft);
+}
+
+.beat-card {
+    overflow: hidden;
+}
+
+.beat-visualizer,
+.visualizer-container {
+    border-radius: var(--radius-card);
+    background: linear-gradient(135deg, #111827 0%, #1d4ed8 55%, #059669 100%);
+}
+
+.beat-info {
+    padding: 1rem 1.1rem 1.1rem;
+}
+
+.beat-actions {
+    gap: 0.55rem;
+    flex-wrap: wrap;
+}
+
+.beat-action-btn {
+    color: var(--ink-muted);
+}
+
+.beat-action-btn.active {
+    color: var(--danger);
+}
+
+.remix-btn {
+    background: var(--surface-muted);
+    color: var(--ink);
+}
+
+.sound-categories {
+    gap: 0.7rem;
+}
+
+.category-card {
+    padding: 0.9rem 0.7rem;
+}
+
+.category-icon,
+.stem-cover,
+.sound-icon {
+    border-radius: var(--radius-card);
+    background: #eef4ff;
+    color: var(--accent);
+    box-shadow: none;
+}
+
+.stem-tag {
+    background: #ecfdf5;
+    color: var(--success);
+    border: 1px solid rgba(5, 150, 105, 0.16);
+    border-radius: 999px;
+    box-shadow: none;
+}
+
+.avatar {
+    background: linear-gradient(135deg, var(--accent), var(--success));
+    color: #fff;
+    box-shadow: var(--shadow);
+}
+
+.stat-value {
+    color: var(--accent);
+}
+
+.modal {
+    background: rgba(15, 23, 42, 0.58);
+}
+
+.modal-content,
+.bottom-sheet,
+.confirm-content {
+    background: rgba(255, 255, 255, 0.96);
+    border: 1px solid var(--border-soft);
+    box-shadow: 0 24px 60px rgba(15, 23, 42, 0.22);
+}
+
+.modal-content,
+.bottom-sheet {
+    border-radius: 18px 18px 0 0;
+}
+
+.confirm-content {
+    border-radius: var(--radius-panel);
+}
+
+.confirm-icon {
+    background: #fff7ed;
+    color: var(--warning);
+    box-shadow: none;
+}
+
+.confirm-icon i {
+    color: var(--warning);
+}
+
+.progress-dot {
+    background: #dbe3ee;
+    border: none;
+}
+
+.progress-dot.active {
+    background: var(--accent);
+    box-shadow: none;
+}
+
+#toast-container {
+    top: 18px;
+    width: min(440px, calc(100% - 28px));
+    pointer-events: none;
+}
+
+.toast {
+    width: 100%;
+    justify-content: center;
+    background: rgba(17, 24, 39, 0.92);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    box-shadow: 0 16px 36px rgba(15, 23, 42, 0.2);
+}
+
+.toast.success {
+    background: rgba(5, 150, 105, 0.94);
+    color: #fff;
+}
+
+.toast.error {
+    background: rgba(225, 29, 72, 0.94);
+}
+
+.onboarding-overlay {
+    background:
+        linear-gradient(135deg, rgba(37, 99, 235, 0.16), transparent 38%),
+        linear-gradient(315deg, rgba(5, 150, 105, 0.16), transparent 38%),
+        #f8fafc;
+}
+
+.onboarding-content h1 {
+    color: var(--ink);
+    letter-spacing: 0;
+}
+
+.onboarding-content p {
+    color: var(--ink-muted);
+}
+
+.logo-pulse {
+    border-radius: 24px;
+    box-shadow: var(--shadow);
+    animation: none;
+    transform: none;
+}
+
+.logo-pulse i {
+    background: linear-gradient(135deg, var(--accent), var(--success));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border: none;
+}
+
+@media (min-width: 768px) {
+    .app-container {
+        max-width: 1120px;
+        border-left: 1px solid var(--border-soft);
+        border-right: 1px solid var(--border-soft);
+    }
+
+    .tab-content {
+        padding: 1.5rem 1.75rem 112px;
+    }
+
+    #discover-tab.active .beats-feed,
+    #library-tab.active .stem-list {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .sound-categories {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 1024px) {
+    #create-tab.active {
+        max-width: 920px;
+        margin: 0 auto;
+    }
+
+    .main-nav {
+        width: min(560px, calc(100% - 36px));
+    }
+}
+
+@media (max-width: 560px) {
+    .studio-header {
+        flex-direction: column;
+    }
+
+    .studio-actions {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr 52px 60px;
+    }
+
+    .btn-magic,
+    .btn-clear {
+        justify-content: center;
+        min-height: 52px;
+    }
+
+    .btn-play {
+        width: 60px;
+        height: 52px;
+        border-radius: var(--radius-control);
+    }
+
+    .step-indicators {
+        margin-left: 72px;
+        overflow-x: auto;
+        padding-bottom: 0.2rem;
+    }
+
+    .piano-header {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .instrument-select {
+        width: 100%;
+    }
+}
+
+@media (max-width: 390px) {
+    .tab-content {
+        padding-left: 0.9rem;
+        padding-right: 0.9rem;
+    }
+
+    .track-label {
+        width: 56px;
+    }
+
+    .step-indicators {
+        margin-left: 64px;
+    }
+
+    .sound-categories {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* ============================================
+   YOUTHFUL PROFESSIONAL BRAND REFINEMENT
+   ============================================ */
+
+:root {
+    --sun: #facc15;
+    --sun-soft: #fff4b8;
+    --sun-deep: #d97706;
+    --aqua: #14b8a6;
+    --aqua-deep: #0f766e;
+    --aqua-soft: #ccfbf1;
+    --berry: #ec4899;
+    --tangerine: #fb923c;
+    --violet-pop: #8b5cf6;
+    --sky-pop: #38bdf8;
+    --page: #fffaf0;
+    --page-tint: #ecfeff;
+    --surface: rgba(255, 255, 255, 0.9);
+    --surface-strong: #ffffff;
+    --surface-muted: #fff9db;
+    --border-soft: rgba(113, 63, 18, 0.12);
+    --border-strong: rgba(20, 184, 166, 0.26);
+    --ink: #1f2937;
+    --ink-muted: #667085;
+    --accent: var(--sun);
+    --accent-strong: #eab308;
+    --success: var(--aqua);
+    --warning: var(--tangerine);
+    --danger: #f43f5e;
+    --shadow: 0 22px 55px rgba(113, 63, 18, 0.1);
+    --shadow-soft: 0 10px 30px rgba(113, 63, 18, 0.08);
+    --shadow-focus: 0 0 0 4px rgba(20, 184, 166, 0.18);
+}
+
+body {
+    background:
+        linear-gradient(145deg, rgba(250, 204, 21, 0.28) 0%, rgba(255, 250, 240, 0.2) 38%),
+        linear-gradient(315deg, rgba(20, 184, 166, 0.2) 0%, rgba(236, 254, 255, 0) 34%),
+        var(--page);
+}
+
+.app-container {
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.12)),
+        transparent;
+}
+
+.studio-header,
+.sequencer-container,
+.bpm-control,
+.recorder-section,
+.piano-section,
+.profile-stats,
+.empty-state,
+.voice-track-bar,
+.piano-track-bar,
+.search-bar,
+.beat-card,
+.category-card,
+.stem-item,
+.recorded-clip,
+.export-btn {
+    border-color: var(--border-soft);
+    box-shadow: var(--shadow-soft);
+}
+
+.studio-header,
+.sequencer-container,
+.recorder-section,
+.piano-section {
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(255, 253, 242, 0.9));
+}
+
+.project-name-input {
+    color: #202124;
+    font-weight: 850;
+}
+
+.project-date {
+    color: var(--aqua-deep);
+}
+
+.btn-primary,
+.btn-magic,
+.btn-confirm-ok {
+    background: linear-gradient(135deg, var(--sun), #f59e0b);
+    color: #2a2112;
+    border-color: rgba(217, 119, 6, 0.28);
+    box-shadow: 0 14px 28px rgba(217, 119, 6, 0.18);
+}
+
+.btn-primary:hover,
+.btn-magic:hover {
+    box-shadow: 0 18px 38px rgba(217, 119, 6, 0.22);
+}
+
+.btn-play,
+.btn-share,
+.btn-play-large,
+.btn-add-to-beat {
+    background: linear-gradient(135deg, var(--aqua), var(--aqua-deep));
+    color: #ffffff;
+    border-color: rgba(15, 118, 110, 0.22);
+    box-shadow: 0 14px 32px rgba(20, 184, 166, 0.22);
+}
+
+.btn-play.playing,
+.btn-record,
+.btn-piano-record,
+.btn-clear,
+.btn-piano-clear,
+.btn-stop-record {
+    background: linear-gradient(135deg, #fb7185, var(--danger));
+    color: #ffffff;
+    border-color: rgba(244, 63, 94, 0.2);
+}
+
+.btn-secondary,
+.btn-confirm-cancel,
+.recorded-clip .btn-play-clip,
+.remix-btn {
+    background: #ffffff;
+    color: var(--ink);
+    border-color: var(--border-soft);
+}
+
+.btn-skip {
+    background: var(--berry);
+}
+
+.main-nav {
+    background: rgba(255, 255, 255, 0.9);
+    border-color: rgba(20, 184, 166, 0.18);
+    box-shadow: 0 20px 48px rgba(15, 118, 110, 0.14);
+}
+
+.nav-btn {
+    color: var(--ink-muted);
+}
+
+.nav-btn.active {
+    background: linear-gradient(180deg, #fff8cc, #ffef8a);
+    color: #713f12;
+}
+
+.nav-btn.active i {
+    color: var(--aqua-deep);
+}
+
+.genre-btn,
+.mood-btn {
+    background: rgba(255, 255, 255, 0.88);
+    color: var(--ink);
+    border-color: rgba(113, 63, 18, 0.12);
+}
+
+.genre-btn.active {
+    color: #241a05;
+    border-color: rgba(113, 63, 18, 0.14);
+    box-shadow: 0 12px 26px color-mix(in srgb, var(--genre-color, var(--sun)) 24%, transparent);
+}
+
+.mood-btn.active {
+    background: linear-gradient(135deg, var(--aqua), var(--aqua-deep));
+    color: #fff;
+}
+
+.track-label {
+    color: #64748b;
+    font-weight: 800;
+}
+
+.grid-cell {
+    background:
+        linear-gradient(180deg, #fffefa, #f8fafc);
+    border-color: rgba(15, 118, 110, 0.12);
+    box-shadow: inset 0 1px 0 #fff, 0 1px 3px rgba(15, 118, 110, 0.04);
+}
+
+.grid-cell::after {
+    background: linear-gradient(135deg, var(--sun), #f59e0b);
+    border-radius: 7px;
+}
+
+.grid-cell.active {
+    background: #fff6b5;
+    border-color: rgba(217, 119, 6, 0.22);
+    box-shadow: 0 9px 18px rgba(217, 119, 6, 0.16);
+}
+
+.grid-cell.playing {
+    background: var(--aqua);
+    border-color: var(--aqua-deep);
+    box-shadow: 0 0 0 4px rgba(20, 184, 166, 0.14);
+}
+
+.step-indicator.active {
+    background: linear-gradient(135deg, var(--aqua), var(--aqua-deep));
+    color: #fff;
+}
+
+.bpm-control {
+    background: linear-gradient(135deg, #ffffff, #ecfeff);
+}
+
+.bpm-control label {
+    color: var(--aqua-deep);
+}
+
+.bpm-control input[type="range"] {
+    background: linear-gradient(90deg, var(--sun), var(--aqua));
+}
+
+.bpm-control input[type="range"]::-webkit-slider-thumb {
+    border-color: var(--aqua);
+    box-shadow: 0 5px 16px rgba(20, 184, 166, 0.24);
+}
+
+#bpm-value,
+.stat-value {
+    color: var(--aqua-deep);
+}
+
+.piano-header {
+    border-bottom-color: rgba(20, 184, 166, 0.18);
+}
+
+.instrument-select {
+    background: #fff8cc;
+    border-color: rgba(217, 119, 6, 0.22);
+}
+
+.piano-container {
+    background:
+        linear-gradient(180deg, #253044, #111827);
+    border-color: rgba(20, 184, 166, 0.2);
+}
+
+.piano-key.white.active {
+    background: var(--sun);
+}
+
+.piano-key.black.active {
+    background: var(--aqua);
+}
+
+.piano-controls {
+    border-top-color: rgba(20, 184, 166, 0.18);
+}
+
+.voice-track-header {
+    color: var(--berry);
+}
+
+.voice-progress-bar {
+    background: linear-gradient(90deg, var(--berry), var(--tangerine));
+}
+
+.piano-track-header {
+    color: var(--violet-pop);
+}
+
+.piano-progress-bar-inline {
+    background: linear-gradient(90deg, var(--violet-pop), var(--aqua));
+}
+
+.beat-visualizer,
+.visualizer-container {
+    background:
+        linear-gradient(135deg, rgba(31, 41, 55, 0.96), rgba(20, 184, 166, 0.88) 58%, rgba(250, 204, 21, 0.9));
+}
+
+.beat-play-overlay {
+    color: var(--aqua-deep);
+}
+
+.beat-action-btn.active {
+    color: var(--berry);
+}
+
+.category-icon,
+.sound-icon {
+    background: linear-gradient(135deg, #fff6b5, #ccfbf1);
+    color: var(--aqua-deep);
+}
+
+.stem-cover {
+    background: linear-gradient(135deg, var(--sun), var(--berry));
+    color: #fff;
+}
+
+.stem-tag {
+    background: #ccfbf1;
+    color: var(--aqua-deep);
+    border-color: rgba(15, 118, 110, 0.18);
+}
+
+.avatar {
+    background: linear-gradient(135deg, var(--sun), var(--aqua));
+    color: #1f2937;
+}
+
+.empty-state i {
+    color: var(--sun-deep);
+}
+
+.search-bar i {
+    color: var(--aqua-deep);
+}
+
+.modal-content,
+.bottom-sheet,
+.confirm-content {
+    background: rgba(255, 255, 255, 0.97);
+    border-color: rgba(20, 184, 166, 0.16);
+}
+
+.confirm-icon {
+    background: #fff8cc;
+    border-color: rgba(217, 119, 6, 0.2);
+}
+
+.confirm-icon i {
+    color: var(--sun-deep);
+}
+
+.progress-dot.active {
+    background: var(--aqua);
+}
+
+.toast {
+    background: rgba(31, 41, 55, 0.94);
+}
+
+.toast.success {
+    background: rgba(15, 118, 110, 0.95);
+}
+
+.toast.error {
+    background: rgba(244, 63, 94, 0.95);
+}
+
+.onboarding-overlay {
+    background:
+        linear-gradient(145deg, rgba(250, 204, 21, 0.42), rgba(255, 250, 240, 0.62) 43%),
+        linear-gradient(315deg, rgba(20, 184, 166, 0.28), rgba(236, 254, 255, 0) 42%),
+        #fffaf0;
+}
+
+.logo-pulse {
+    background: #fffef7;
+    border: 1px solid rgba(217, 119, 6, 0.12);
+    box-shadow: 0 24px 60px rgba(113, 63, 18, 0.14);
+}
+
+.logo-pulse i {
+    background: linear-gradient(135deg, var(--sun-deep), var(--aqua-deep));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.onboarding-content h1 {
+    color: #202124;
+}
+
+.onboarding-content p {
+    color: #667085;
+}
+
+.guest-text {
+    color: var(--aqua-deep) !important;
+}
+
+/* ============================================
+   ANTI-TEMPLATE STUDIO PASS
+   ============================================ */
+
+:root {
+    --paper: #fff8df;
+    --paper-clean: #fffdf6;
+    --charcoal: #171a1f;
+    --charcoal-2: #252a32;
+    --line: #262114;
+    --mustard: #f4c430;
+    --mustard-deep: #c88719;
+    --pool: #18b7a0;
+    --pool-deep: #0b756c;
+    --sherbet: #ff6b6b;
+    --grape: #7c5cff;
+    --chalk: #f7f4ea;
+    --ink: #171a1f;
+    --ink-muted: #656b76;
+    --surface: #fffdf6;
+    --surface-strong: #ffffff;
+    --surface-muted: #fff1aa;
+    --border-soft: rgba(38, 33, 20, 0.14);
+    --border-strong: rgba(38, 33, 20, 0.28);
+    --radius-panel: 8px;
+    --radius-card: 6px;
+    --radius-control: 7px;
+    --shadow: 8px 8px 0 rgba(23, 26, 31, 0.1);
+    --shadow-soft: 4px 4px 0 rgba(23, 26, 31, 0.08);
+    --shadow-focus: 0 0 0 4px rgba(24, 183, 160, 0.22);
+}
+
+html,
+body {
+    background:
+        linear-gradient(90deg, rgba(244, 196, 48, 0.22) 0 80px, transparent 80px),
+        repeating-linear-gradient(0deg, rgba(38, 33, 20, 0.035) 0 1px, transparent 1px 32px),
+        repeating-linear-gradient(90deg, rgba(38, 33, 20, 0.025) 0 1px, transparent 1px 32px),
+        linear-gradient(135deg, #fff8df 0%, #fffdf6 45%, #e9fffb 100%);
+}
+
+.app-container {
+    background: transparent;
+}
+
+.tab-content {
+    scrollbar-gutter: stable;
+}
+
+.studio-header,
+.sequencer-container,
+.bpm-control,
+.recorder-section,
+.piano-section,
+.profile-stats,
+.empty-state,
+.voice-track-bar,
+.piano-track-bar,
+.search-bar,
+.beat-card,
+.category-card,
+.stem-item,
+.recorded-clip,
+.export-btn,
+.modal-content,
+.bottom-sheet,
+.confirm-content {
+    background: var(--surface);
+    border: 2px solid var(--line);
+    border-radius: var(--radius-panel);
+    box-shadow: var(--shadow-soft);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
+.studio-header {
+    position: sticky;
+    top: 0.75rem;
+    z-index: 20;
+    padding: 0.95rem;
+    box-shadow: var(--shadow);
+}
+
+.studio-header::before {
+    content: "LOOPFLOW STUDIO";
+    position: absolute;
+    top: -11px;
+    left: 14px;
+    background: var(--pool);
+    color: white;
+    border: 2px solid var(--line);
+    border-radius: 999px;
+    padding: 0.16rem 0.58rem;
+    font-size: 0.62rem;
+    font-weight: 900;
+    letter-spacing: 0.06em;
+}
+
+.project-name-input {
+    font-family: 'Inter', system-ui, sans-serif;
+    font-weight: 900;
+    color: var(--charcoal);
+}
+
+.project-date {
+    color: var(--pool-deep);
+    font-weight: 850;
+}
+
+.btn-primary,
+.btn-secondary,
+.btn-magic,
+.btn-clear,
+.btn-share,
+.btn-play-large,
+.btn-record,
+.btn-stop-record,
+.btn-piano-record,
+.btn-piano-clear,
+.btn-add-to-beat,
+.recorded-clip .btn-play-clip,
+.remix-btn,
+.mood-btn,
+.genre-btn,
+.export-btn,
+.btn-skip,
+.btn-confirm-cancel,
+.btn-confirm-ok,
+.btn-close,
+.instrument-select {
+    border: 2px solid var(--line);
+    border-radius: var(--radius-control);
+    box-shadow: 4px 4px 0 rgba(23, 26, 31, 0.16);
+    transform: translate(0, 0);
+}
+
+.btn-primary,
+.btn-magic,
+.btn-confirm-ok {
+    background: var(--mustard);
+    color: var(--charcoal);
+}
+
+.btn-play,
+.btn-share,
+.btn-play-large,
+.btn-add-to-beat {
+    background: var(--pool);
+    color: #ffffff;
+    border: 2px solid var(--line);
+    box-shadow: 5px 5px 0 rgba(23, 26, 31, 0.16);
+}
+
+.btn-clear,
+.btn-piano-clear,
+.btn-stop-record,
+.btn-record,
+.btn-piano-record {
+    background: var(--sherbet);
+    color: var(--charcoal);
+}
+
+.btn-secondary,
+.btn-confirm-cancel,
+.recorded-clip .btn-play-clip,
+.remix-btn {
+    background: #ffffff;
+}
+
+.btn-primary:hover,
+.btn-magic:hover,
+.btn-share:hover,
+.btn-play:hover,
+.btn-play-large:hover,
+.category-card:hover,
+.stem-item:hover,
+.beat-card:hover,
+.export-btn:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 7px 7px 0 rgba(23, 26, 31, 0.18);
+}
+
+.btn-clear:active,
+.btn-play:active,
+.btn-share:active,
+.mood-btn:active,
+.remix-btn:active,
+.category-card:active,
+.stem-item:active,
+.recorded-clip .btn-play-clip:active,
+.btn-add-to-beat:active,
+.btn-piano-record:active,
+.btn-piano-clear:active,
+.export-btn:active,
+.genre-btn:active,
+.btn-primary:active,
+.btn-magic:active {
+    transform: translate(3px, 3px);
+    box-shadow: 1px 1px 0 rgba(23, 26, 31, 0.16);
+}
+
+.main-nav {
+    background: var(--charcoal);
+    border: 2px solid var(--line);
+    border-radius: 12px;
+    box-shadow: 8px 8px 0 rgba(23, 26, 31, 0.16);
+}
+
+.nav-btn {
+    color: #d9ded8;
+    border-radius: 7px;
+}
+
+.nav-btn.active {
+    background: var(--mustard);
+    color: var(--charcoal);
+}
+
+.nav-btn.active i {
+    color: var(--pool-deep);
+}
+
+.genre-selector,
+.mood-filter {
+    padding-top: 0.1rem;
+}
+
+.genre-btn,
+.mood-btn {
+    background: #fffdf6;
+    color: var(--charcoal);
+}
+
+.genre-btn.active {
+    background: var(--genre-color, var(--mustard));
+    color: var(--charcoal);
+}
+
+.mood-btn.active {
+    background: var(--pool);
+    color: white;
+}
+
+.sequencer-container {
+    background:
+        linear-gradient(90deg, rgba(24, 183, 160, 0.08), transparent 42%),
+        var(--paper-clean);
+}
+
+.track-label {
+    color: var(--charcoal-2);
+    font-size: 0.66rem;
+    font-weight: 900;
+}
+
+.sequencer-grid {
+    gap: 0.42rem;
+}
+
+.grid-cell {
+    background: #fffdf6;
+    border: 2px solid rgba(38, 33, 20, 0.16);
+    border-radius: 5px;
+    box-shadow: inset 0 -3px 0 rgba(23, 26, 31, 0.04);
+}
+
+.grid-cell:nth-child(4n + 1) {
+    background: #fff9d7;
+}
+
+.grid-cell::after {
+    background: var(--charcoal);
+    border-radius: 3px;
+}
+
+.grid-cell.active {
+    background: var(--mustard);
+    border-color: var(--line);
+    box-shadow: 3px 3px 0 rgba(23, 26, 31, 0.16);
+}
+
+.grid-cell.playing {
+    background: var(--pool);
+    border-color: var(--line);
+    box-shadow: 0 0 0 4px rgba(24, 183, 160, 0.22), 3px 3px 0 rgba(23, 26, 31, 0.14);
+}
+
+.step-indicator {
+    background: transparent;
+    color: var(--charcoal);
+    font-weight: 900;
+}
+
+.step-indicator.active {
+    background: var(--charcoal);
+    color: var(--mustard);
+}
+
+.bpm-control {
+    background: var(--charcoal);
+    color: white;
+}
+
+.bpm-control label {
+    color: var(--mustard);
+}
+
+.bpm-control input[type="range"] {
+    background: linear-gradient(90deg, var(--mustard), var(--pool));
+}
+
+#bpm-value {
+    color: #ffffff;
+}
+
+.recorder-section,
+.piano-section {
+    position: relative;
+}
+
+.recorder-section::before,
+.piano-section::before {
+    content: "";
+    position: absolute;
+    inset: 0.55rem auto auto 0.55rem;
+    width: 9px;
+    height: 9px;
+    background: var(--sherbet);
+    border: 2px solid var(--line);
+    border-radius: 50%;
+}
+
+.piano-section::before {
+    background: var(--pool);
+}
+
+.recorder-section h3,
+.piano-header h3,
+.stem-packs h3,
+.my-beats h3,
+.discover-header h2,
+.library-header h2,
+.profile-header h2 {
+    font-family: 'Inter', system-ui, sans-serif;
+    color: var(--charcoal);
+    font-weight: 900;
+}
+
+.piano-header,
+.piano-controls {
+    border-color: var(--line);
+}
+
+.instrument-select {
+    background: var(--mustard);
+    color: var(--charcoal);
+}
+
+.piano-container {
+    background:
+        linear-gradient(180deg, #222833, #111418);
+    border: 2px solid var(--line);
+    box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.04);
+}
+
+.piano-key.white {
+    background: #fffdf6;
+    border-color: var(--line);
+    box-shadow: inset 0 -7px 0 rgba(23, 26, 31, 0.09);
+}
+
+.piano-key.black {
+    background: var(--charcoal);
+    border-color: #050607;
+}
+
+.piano-key.white.active {
+    background: var(--mustard);
+}
+
+.piano-key.black.active {
+    background: var(--pool);
+}
+
+.voice-track-bar,
+.piano-track-bar {
+    background: var(--charcoal);
+    color: white;
+}
+
+.voice-track-header {
+    color: var(--sherbet);
+}
+
+.piano-track-header {
+    color: var(--mustard);
+}
+
+.voice-progress-bar-container,
+.piano-progress-bar-container-inline {
+    background: #323844;
+    border: 2px solid rgba(255, 255, 255, 0.14);
+}
+
+.voice-progress-bar {
+    background: var(--sherbet);
+}
+
+.piano-progress-bar-inline {
+    background: var(--pool);
+}
+
+.beat-card {
+    overflow: hidden;
+}
+
+.beat-visualizer,
+.visualizer-container {
+    background:
+        repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.11) 0 6px, transparent 6px 14px),
+        linear-gradient(135deg, var(--charcoal) 0%, var(--pool-deep) 58%, var(--mustard) 100%);
+    border-bottom: 2px solid var(--line);
+}
+
+.beat-play-overlay {
+    background: var(--paper-clean);
+    border: 2px solid var(--line);
+    color: var(--pool-deep);
+    box-shadow: 5px 5px 0 rgba(23, 26, 31, 0.16);
+}
+
+.beat-title {
+    color: var(--charcoal);
+    font-weight: 900;
+}
+
+.beat-author,
+.stem-artist,
+.profile-header p,
+.stat-label,
+.sound-details p,
+.search-bar input::placeholder,
+.piano-label {
+    color: var(--ink-muted);
+}
+
+.beat-action-btn {
+    color: var(--ink-muted);
+}
+
+.beat-action-btn.active {
+    color: var(--sherbet);
+}
+
+.category-card,
+.stem-item {
+    background: #fffdf6;
+}
+
+.category-icon,
+.sound-icon {
+    background: var(--mustard);
+    color: var(--charcoal);
+    border: 2px solid var(--line);
+}
+
+.stem-cover {
+    background:
+        repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.18) 0 5px, transparent 5px 11px),
+        var(--pool);
+    border: 2px solid var(--line);
+}
+
+.stem-tag {
+    background: var(--mustard);
+    color: var(--charcoal);
+    border: 2px solid var(--line);
+}
+
+.search-bar {
+    background: #fffdf6;
+}
+
+.search-bar i {
+    color: var(--pool-deep);
+}
+
+.avatar {
+    background:
+        repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.2) 0 6px, transparent 6px 12px),
+        var(--mustard);
+    border: 2px solid var(--line);
+    color: var(--charcoal);
+}
+
+.stat-value {
+    color: var(--pool-deep);
+    font-weight: 900;
+}
+
+.empty-state {
+    background: #fffdf6;
+}
+
+.empty-state i {
+    color: var(--mustard-deep);
+}
+
+.modal {
+    background: rgba(23, 26, 31, 0.62);
+}
+
+.modal-content,
+.bottom-sheet {
+    border-radius: 12px 12px 0 0;
+}
+
+.btn-close {
+    background: var(--mustard);
+    color: var(--charcoal);
+}
+
+.progress-dot {
+    background: #d7d1bd;
+    border: 2px solid var(--line);
+}
+
+.progress-dot.active {
+    background: var(--pool);
+}
+
+.toast {
+    background: var(--charcoal);
+    border: 2px solid var(--line);
+    border-radius: 8px;
+    box-shadow: 5px 5px 0 rgba(23, 26, 31, 0.2);
+}
+
+.toast.success {
+    background: var(--pool-deep);
+}
+
+.toast.error {
+    background: var(--sherbet);
+    color: var(--charcoal);
+}
+
+.onboarding-overlay {
+    background:
+        linear-gradient(90deg, rgba(244, 196, 48, 0.36) 0 80px, transparent 80px),
+        repeating-linear-gradient(0deg, rgba(38, 33, 20, 0.04) 0 1px, transparent 1px 34px),
+        linear-gradient(135deg, #fff8df 0%, #fffdf6 54%, #dcfff9 100%);
+}
+
+.onboarding-content {
+    position: relative;
+}
+
+.onboarding-content::before {
+    content: "MAKE A LOOP";
+    display: inline-flex;
+    margin-bottom: 1rem;
+    background: var(--charcoal);
+    color: var(--mustard);
+    border: 2px solid var(--line);
+    border-radius: 999px;
+    padding: 0.28rem 0.72rem;
+    font-size: 0.72rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+}
+
+.logo-pulse {
+    background: #fffdf6;
+    border: 2px solid var(--line);
+    border-radius: 18px;
+    box-shadow: 9px 9px 0 rgba(23, 26, 31, 0.14);
+}
+
+.logo-pulse i {
+    background: linear-gradient(135deg, var(--mustard-deep), var(--pool-deep));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.onboarding-content h1 {
+    font-family: 'Inter', system-ui, sans-serif;
+    color: var(--charcoal);
+    font-weight: 900;
+}
+
+.onboarding-content p {
+    color: var(--ink-muted);
+}
+
+.guest-text {
+    color: var(--pool-deep) !important;
+}
+
+@media (min-width: 768px) {
+    .tab-content {
+        max-width: 1060px;
+        margin: 0 auto;
+    }
+
+    #create-tab.active {
+        display: grid;
+        grid-template-columns: minmax(0, 1.45fr) minmax(280px, 0.72fr);
+        align-items: start;
+        gap: 1rem;
+    }
+
+    #create-tab .studio-header,
+    #create-tab .genre-selector,
+    #create-tab .sequencer-container,
+    #create-tab .step-indicators,
+    #create-tab .bpm-control,
+    #create-tab .btn-share {
+        grid-column: 1;
+    }
+
+    #create-tab .recorder-section,
+    #create-tab .piano-section {
+        grid-column: 2;
+    }
+
+    #create-tab .recorder-section {
+        grid-row: 1 / span 4;
+    }
+
+    #create-tab .piano-section {
+        grid-row: 5 / span 4;
+    }
+
+    .piano-keys {
+        justify-content: flex-start;
+    }
+}
+
+@media (max-width: 767px) {
+    html,
+    body {
+        background:
+            linear-gradient(90deg, rgba(244, 196, 48, 0.18) 0 22px, transparent 22px),
+            repeating-linear-gradient(0deg, rgba(38, 33, 20, 0.035) 0 1px, transparent 1px 30px),
+            linear-gradient(135deg, #fff8df 0%, #fffdf6 52%, #e9fffb 100%);
+    }
+
+    .studio-header {
+        position: static;
+    }
+}
+
+@media (min-width: 768px) {
+    #create-tab.active {
+        display: block;
+        max-width: 760px;
+    }
+
+    #create-tab .studio-header {
+        grid-area: auto;
+    }
+
+    #create-tab .genre-selector {
+        grid-area: auto;
+    }
+
+    #create-tab .sequencer-container {
+        grid-area: auto;
+    }
+
+    #create-tab .step-indicators {
+        grid-area: auto;
+    }
+
+    #create-tab .bpm-control {
+        grid-area: auto;
+    }
+
+    #create-tab .btn-share {
+        grid-area: auto;
+    }
+
+    #create-tab .recorder-section {
+        grid-area: auto;
+    }
+
+    #create-tab .piano-section {
+        grid-area: auto;
+    }
+
+    #create-tab .studio-header,
+    #create-tab .genre-selector,
+    #create-tab .sequencer-container,
+    #create-tab .step-indicators,
+    #create-tab .bpm-control,
+    #create-tab .btn-share,
+    #create-tab .recorder-section,
+    #create-tab .piano-section {
+        grid-column: auto;
+        grid-row: auto;
+    }
+
+    #create-tab .btn-share {
+        margin-top: 0;
+    }
+
+    #create-tab .studio-header {
+        grid-area: studio;
+    }
+
+    #create-tab .genre-selector {
+        grid-area: genres;
+    }
+
+    #create-tab .sequencer-container {
+        grid-area: sequencer;
+    }
+
+    #create-tab .step-indicators {
+        grid-area: steps;
+    }
+
+    #create-tab .bpm-control {
+        grid-area: bpm;
+    }
+
+    #create-tab .btn-share {
+        grid-area: share;
+    }
+
+    #create-tab .recorder-section {
+        grid-area: recorder;
+    }
+
+    #create-tab .piano-section {
+        grid-area: piano;
     }
 }

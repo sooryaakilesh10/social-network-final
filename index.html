@@ -7,7 +7,6 @@
     <title>LoopFlow - Create & Share Beats</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="confirm-modal.css">
-    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -84,16 +83,16 @@
 
             <!-- Genre Selector -->
             <div class="genre-selector">
-                <button class="genre-btn active" data-genre="trap" style="--genre-color: #8B5CF6">
+                <button class="genre-btn active" data-genre="trap" style="--genre-color: #FACC15">
                     <i class="fas fa-drum"></i> Trap
                 </button>
-                <button class="genre-btn" data-genre="lofi" style="--genre-color: #3B82F6">
+                <button class="genre-btn" data-genre="lofi" style="--genre-color: #14B8A6">
                     <i class="fas fa-coffee"></i> Lo-fi
                 </button>
-                <button class="genre-btn" data-genre="house" style="--genre-color: #F97316">
+                <button class="genre-btn" data-genre="house" style="--genre-color: #F43F5E">
                     <i class="fas fa-bolt"></i> House
                 </button>
-                <button class="genre-btn" data-genre="ambient" style="--genre-color: #10B981">
+                <button class="genre-btn" data-genre="ambient" style="--genre-color: #38BDF8">
                     <i class="fas fa-cloud"></i> Ambient
                 </button>
             </div>
@@ -127,11 +126,21 @@
                 <div class="step-indicator" data-step="7">8</div>
             </div>
 
-            <!-- BPM Control -->
-            <div class="bpm-control">
-                <label>BPM</label>
-                <input type="range" id="bpm-slider" min="60" max="180" value="120">
-                <span id="bpm-value">120</span>
+            <!-- Controls (BPM & Length) -->
+            <div class="controls-row" style="display: flex; gap: 1rem;">
+                <div class="bpm-control" style="flex: 1;">
+                    <label>BPM</label>
+                    <input type="range" id="bpm-slider" min="60" max="180" value="120">
+                    <span id="bpm-value">120</span>
+                </div>
+                <div class="length-control bpm-control" style="flex: 1;">
+                    <label>Steps</label>
+                    <select id="grid-length-select" class="instrument-select" style="flex: 1;">
+                        <option value="8">8</option>
+                        <option value="16">16</option>
+                        <option value="32">32</option>
+                    </select>
+                </div>
             </div>
 
             <!-- Voice Recorder Section -->

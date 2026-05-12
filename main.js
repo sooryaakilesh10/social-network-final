@@ -24,10 +24,10 @@ const AppState = {
 
 // Genre configurations with colors
 const Genres = {
-    trap: { color: '#8B5CF6', bpm: 140, name: 'Trap' },
-    lofi: { color: '#3B82F6', bpm: 85, name: 'Lo-fi' },
-    house: { color: '#F97316', bpm: 128, name: 'House' },
-    ambient: { color: '#10B981', bpm: 100, name: 'Ambient' }
+    trap: { color: '#FACC15', bpm: 140, name: 'Trap' },
+    lofi: { color: '#14B8A6', bpm: 85, name: 'Lo-fi' },
+    house: { color: '#F43F5E', bpm: 128, name: 'House' },
+    ambient: { color: '#38BDF8', bpm: 100, name: 'Ambient' }
 };
 
 // Magic Fill patterns for each genre
@@ -203,7 +203,7 @@ function highlightPlayingStep(step) {
     });
 
     document.querySelectorAll('.grid-cell').forEach((cell, i) => {
-        const cellStep = i % 8;
+        const cellStep = i % AppState.gridSteps;
         cell.classList.toggle('playing', cellStep === step);
     });
 }
@@ -287,6 +287,7 @@ function init() {
 function generateGrid() {
     const grid = document.getElementById('sequencer-grid');
     grid.innerHTML = '';
+    grid.style.gridTemplateColumns = `repeat(${AppState.gridSteps}, minmax(34px, 1fr))`;
 
     for (let track = 0; track < 8; track++) {
         for (let step = 0; step < AppState.gridSteps; step++) {
@@ -428,6 +429,15 @@ function setupEventListeners() {
             Tone.Transport.bpm.value = AppState.bpm;
         }
     });
+
+    // Grid length control
+    const lengthSelect = document.getElementById('grid-length-select');
+    if (lengthSelect) {
+        lengthSelect.value = AppState.gridSteps;
+        lengthSelect.addEventListener('change', (e) => {
+            extendGrid(parseInt(e.target.value));
+        });
+    }
 
     // Share
     document.getElementById('share-btn').addEventListener('click', openShareModal);
@@ -733,10 +743,10 @@ function initVisualizer(canvasId, genre) {
     canvas.height = canvas.offsetHeight;
 
     const colors = {
-        trap: ['#8B5CF6', '#EC4899'],
-        lofi: ['#3B82F6', '#60A5FA'],
-        house: ['#F97316', '#FBBF24'],
-        ambient: ['#10B981', '#34D399']
+        trap: ['#FACC15', '#14B8A6'],
+        lofi: ['#14B8A6', '#67E8F9'],
+        house: ['#F43F5E', '#FB923C'],
+        ambient: ['#38BDF8', '#14B8A6']
     };
 
     const [color1, color2] = colors[genre] || colors.trap;
@@ -878,10 +888,10 @@ function initShareVisualizer() {
 
     const genre = AppState.currentGenre;
     const colors = {
-        trap: ['#8B5CF6', '#EC4899'],
-        lofi: ['#3B82F6', '#60A5FA'],
-        house: ['#F97316', '#FBBF24'],
-        ambient: ['#10B981', '#34D399']
+        trap: ['#FACC15', '#14B8A6'],
+        lofi: ['#14B8A6', '#67E8F9'],
+        house: ['#F43F5E', '#FB923C'],
+        ambient: ['#38BDF8', '#14B8A6']
     };
 
     const [color1, color2] = colors[genre];
