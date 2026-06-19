@@ -509,13 +509,13 @@ body {
 }
 
 .track-labels {
-    display: flex;
-    flex-direction: column;
-    gap: 0.4rem;
+    display: grid;
+    grid-template-rows: repeat(8, 1fr);
+    gap: 0.42rem;
 }
 
 .track-label {
-    height: 46px;
+    height: 100%;
     display: flex;
     align-items: center;
     font-size: 0.75rem;
@@ -1637,7 +1637,7 @@ body {
     }
 
     .track-label {
-        height: 34px;
+        height: 100%;
     }
 }
 
