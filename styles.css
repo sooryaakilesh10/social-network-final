@@ -2044,7 +2044,7 @@ body {
     border: 1px solid var(--border-soft);
     border-radius: var(--radius-panel);
     padding: 12px;
-    gap: 12px;
+    gap: 0.5rem;
     height: 380px;
     overflow: hidden;
     position: relative;
@@ -2052,7 +2052,7 @@ body {
 }
 
 .piano-roll-sidebar {
-    width: 65px;
+    width: 64px;
     display: grid;
     grid-template-rows: repeat(13, 1fr);
     gap: 3px;
@@ -2122,7 +2122,7 @@ body {
     height: 100%;
     border-radius: var(--radius-panel);
     border: 1px solid var(--border-soft);
-    background: #0f172a;
+    background: #ffffff;
 }
 
 .piano-roll-grid {
@@ -2130,27 +2130,27 @@ body {
     grid-template-rows: repeat(13, 1fr);
     height: 100%;
     min-width: max-content;
-    gap: 3px;
+    gap: 0.4rem;
     padding: 0;
 }
 
 .piano-roll-cell {
-    width: 44px;
+    min-width: 34px;
     height: 100%;
-    background: rgba(30, 41, 59, 0.4);
-    border-right: 1px solid rgba(255, 255, 255, 0.04);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    background: #ffffff;
+    border-right: 1px solid var(--border-soft);
+    border-bottom: 1px solid var(--border-soft);
     cursor: pointer;
     box-sizing: border-box;
     transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
 }
 
 .piano-roll-cell.black-row {
-    background: rgba(15, 23, 42, 0.7);
+    background: #f1f5f9;
 }
 
 .piano-roll-cell:hover {
-    background: rgba(255, 255, 255, 0.08);
+    background: #f8fafc;
 }
 
 .piano-roll-cell:active {
@@ -2159,28 +2159,28 @@ body {
 
 .piano-roll-cell.active {
     background: linear-gradient(135deg, var(--accent), var(--accent-strong));
-    box-shadow: 0 0 10px rgba(37, 99, 235, 0.5), inset 0 1px 2px rgba(255, 255, 255, 0.3);
-    border-color: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3), inset 0 1px 2px rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.1);
 }
 
 .piano-roll-cell.active.black-row {
     background: linear-gradient(135deg, var(--hot-pink), var(--coral));
-    box-shadow: 0 0 10px rgba(244, 63, 94, 0.5), inset 0 1px 2px rgba(255, 255, 255, 0.3);
-    border-color: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 4px 10px rgba(244, 63, 94, 0.3), inset 0 1px 2px rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.1);
 }
 
 .piano-roll-cell.playing {
-    background-color: rgba(255, 255, 255, 0.12);
+    background-color: rgba(37, 99, 235, 0.12);
 }
 
 .piano-roll-cell.playing.active {
-    filter: brightness(1.25);
+    filter: brightness(1.1);
 }
 
 .piano-roll-cell.scale-disabled {
-    opacity: 0.15;
+    opacity: 0.35;
     pointer-events: none;
-    background: rgba(15, 23, 42, 0.9);
+    background: #cbd5e1;
 }
 
 .btn-piano-clear {
@@ -2197,6 +2197,27 @@ body {
     border: 1px solid var(--border-soft);
     cursor: pointer;
     box-shadow: var(--shadow-soft);
+}
+
+.btn-piano-play {
+    width: 34px;
+    height: 34px;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    background: var(--accent);
+    color: #fff;
+    border-radius: var(--radius-control);
+    border: 1px solid var(--border-soft);
+    cursor: pointer;
+    box-shadow: var(--shadow-soft);
+}
+
+.btn-piano-play.playing {
+    background: var(--danger) !important;
+    border-color: rgba(255, 255, 255, 0.2) !important;
 }
 
 /* ============================================

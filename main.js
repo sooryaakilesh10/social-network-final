@@ -21,6 +21,8 @@ const AppState = {
     voiceRecordingUrl: null,
     pianoRecordingUrl: null,
     pianoGrid: Array(13).fill(null).map(() => Array(8).fill(false)),
+    isPianoPlaying: false,
+    currentPianoStep: 0,
     fxActive: { reverb: false, delay: false, distortion: false, chorus: false },
     fxSettings: {
         reverb: { decay: 2.5, mix: 50 },
@@ -110,6 +112,7 @@ const StemPacks = [
 // ============================================
 let synths = {};
 let loop = null;
+let pianoLoop = null;
 let progressAnimationFrame = null; // For smooth progress bar animation
 
 function initAudio() {
@@ -180,6 +183,12 @@ function initAudio() {
         updateStepIndicator();
     }, "8n");
 
+    // Create the piano-only solo loop
+    pianoLoop = new Tone.Loop((time) => {
+        playPianoStep(time);
+        updatePianoStepIndicator();
+    }, "8n");
+
     Tone.Transport.bpm.value = AppState.bpm;
     AppState.audioContextStarted = true;
 }
@@ -247,6 +256,11 @@ function togglePlayback() {
     AppState.isPlaying = !AppState.isPlaying;
 
     if (AppState.isPlaying) {
+        // If piano solo is playing, stop it
+        if (AppState.isPianoPlaying) {
+            stopPianoPlayback();
+        }
+
         // Stop any previews that might be playing
         stopChordPreview();
 
@@ -1349,6 +1363,12 @@ function initPiano() {
         clearBtn.addEventListener('click', clearPianoGrid);
     }
 
+    // Play solo button
+    const playBtn = document.getElementById('piano-play-btn');
+    if (playBtn) {
+        playBtn.addEventListener('click', togglePianoPlayback);
+    }
+
     // Generate grid cells
     generatePianoRollGrid();
 }
@@ -1358,7 +1378,7 @@ function generatePianoRollGrid() {
     if (!grid) return;
 
     grid.innerHTML = '';
-    grid.style.gridTemplateColumns = `repeat(${AppState.gridSteps}, 44px)`;
+    grid.style.gridTemplateColumns = `repeat(${AppState.gridSteps}, minmax(34px, 1fr))`;
     grid.style.gridTemplateRows = `repeat(13, 1fr)`;
 
     for (let row = 0; row < 13; row++) {
@@ -1444,6 +1464,87 @@ function clearPianoGrid() {
 
             showToast('Piano roll cleared!', 'success');
         });
+}
+
+function togglePianoPlayback() {
+    if (!AppState.audioContextStarted) {
+        Tone.start();
+        initAudio();
+    }
+
+    AppState.isPianoPlaying = !AppState.isPianoPlaying;
+
+    if (AppState.isPianoPlaying) {
+        // If main loop is playing, stop it!
+        if (AppState.isPlaying) {
+            togglePlayback();
+        }
+
+        stopChordPreview();
+
+        Tone.Transport.stop();
+        Tone.Transport.seconds = 0;
+        Tone.Transport.start();
+        pianoLoop.start(0);
+
+        const playBtn = document.getElementById('piano-play-btn');
+        if (playBtn) {
+            playBtn.innerHTML = '<i class="fas fa-pause"></i>';
+            playBtn.classList.add('playing');
+        }
+        
+        showToast('Playing piano roll solo', 'success');
+    } else {
+        stopPianoPlayback();
+    }
+}
+
+function stopPianoPlayback() {
+    if (pianoLoop) {
+        pianoLoop.stop();
+    }
+    AppState.isPianoPlaying = false;
+    AppState.currentPianoStep = 0;
+
+    const playBtn = document.getElementById('piano-play-btn');
+    if (playBtn) {
+        playBtn.innerHTML = '<i class="fas fa-play"></i>';
+        playBtn.classList.remove('playing');
+    }
+
+    // Clear highlights on cells
+    document.querySelectorAll('.piano-roll-cell').forEach((cell) => {
+        cell.classList.remove('playing');
+    });
+}
+
+function playPianoStep(time) {
+    const step = AppState.currentPianoStep;
+
+    // Play active cells of piano roll
+    for (let row = 0; row < 13; row++) {
+        if (AppState.pianoGrid && AppState.pianoGrid[row] && AppState.pianoGrid[row][step]) {
+            if (pianoSynth) {
+                pianoSynth.triggerAttackRelease(pianoNotes[row].note, "8n", time);
+            }
+        }
+    }
+
+    // Visual feedback
+    Tone.Draw.schedule(() => {
+        highlightPianoPlayingStep(step);
+    }, time);
+}
+
+function updatePianoStepIndicator() {
+    AppState.currentPianoStep = (AppState.currentPianoStep + 1) % AppState.gridSteps;
+}
+
+function highlightPianoPlayingStep(step) {
+    document.querySelectorAll('.piano-roll-cell').forEach((cell) => {
+        const cellStep = parseInt(cell.dataset.step);
+        cell.classList.toggle('playing', cellStep === step);
+    });
 }
 
 function changeInstrument(instrument) {
