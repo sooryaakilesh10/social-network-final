@@ -82,7 +82,7 @@
             </header>
 
             <!-- Genre Selector -->
-            <div class="genre-selector">
+            <!-- <div class="genre-selector">
                 <button class="genre-btn active" data-genre="trap" style="--genre-color: #FACC15">
                     <i class="fas fa-drum"></i> Trap
                 </button>
@@ -95,7 +95,7 @@
                 <button class="genre-btn" data-genre="ambient" style="--genre-color: #38BDF8">
                     <i class="fas fa-cloud"></i> Ambient
                 </button>
-            </div>
+            </div> -->
 
             <!-- Sequencer Grid -->
             <div class="sequencer-container">
@@ -137,17 +137,12 @@
                 </div>
             </div>
 
-            <!-- Controls Row 1: BPM, Swing, Steps -->
+            <!-- Controls Row 1: BPM, Steps -->
             <div class="controls-row">
                 <div class="bpm-control">
                     <label>BPM</label>
                     <input type="range" id="bpm-slider" min="60" max="180" value="120">
                     <span id="bpm-value">120</span>
-                </div>
-                <div class="bpm-control swing-control">
-                    <label>Swing</label>
-                    <input type="range" id="swing-slider" min="0" max="100" value="0">
-                    <span id="swing-value">0%</span>
                 </div>
                 <div class="length-control bpm-control">
                     <label>Steps</label>
@@ -160,7 +155,7 @@
             </div>
 
             <!-- Controls Row 2: Metronome, Pattern Banks, Undo -->
-            <div class="controls-row controls-row-2">
+            <!-- <div class="controls-row controls-row-2">
                 <button id="metronome-btn" class="btn-tool" title="Metronome">
                     <i class="fas fa-drum"></i> <span>Click</span>
                 </button>
@@ -179,10 +174,10 @@
                 <button id="redo-btn" class="btn-tool" title="Redo">
                     <i class="fas fa-redo"></i>
                 </button>
-            </div>
+            </div> -->
 
             <!-- Controls Row 3: DJ Performance Tools -->
-            <div class="controls-row controls-row-3">
+            <!-- <div class="controls-row controls-row-3">
                 <button id="tape-stop-btn" class="btn-tool btn-tool-accent" title="Tape Stop">
                     <i class="fas fa-compact-disc"></i> <span>Tape Stop</span>
                 </button>
@@ -195,39 +190,145 @@
                 <button id="double-speed-btn" class="btn-tool btn-tool-accent" title="Double Speed">
                     <i class="fas fa-forward"></i> <span>2×</span>
                 </button>
-            </div>
+            </div> -->
 
-            <!-- Effects Rack -->
+            <!-- Effects Processor Rack -->
             <div class="fx-rack" id="fx-rack">
                 <div class="fx-rack-header">
-                    <span><i class="fas fa-magic"></i> Effects</span>
+                    <span><i class="fas fa-magic"></i> Modular Effects Processor</span>
                 </div>
-                <div class="fx-rack-controls">
-                    <button class="fx-toggle" id="fx-reverb" data-fx="reverb">
-                        <i class="fas fa-water"></i>
-                        <span>Reverb</span>
-                    </button>
-                    <button class="fx-toggle" id="fx-delay" data-fx="delay">
-                        <i class="fas fa-sync-alt"></i>
-                        <span>Delay</span>
-                    </button>
-                    <button class="fx-toggle" id="fx-distortion" data-fx="distortion">
-                        <i class="fas fa-bolt"></i>
-                        <span>Crush</span>
-                    </button>
-                    <button class="fx-toggle" id="fx-chorus" data-fx="chorus">
-                        <i class="fas fa-layer-group"></i>
-                        <span>Chorus</span>
-                    </button>
-                    <div class="fx-mix-control">
-                        <label>Mix</label>
-                        <input type="range" id="fx-mix-slider" min="0" max="100" value="50">
+                <div class="fx-modular-container">
+                    <!-- Reverb Card -->
+                    <div class="fx-card" id="fx-card-reverb" data-fx="reverb">
+                        <div class="fx-card-header">
+                            <span class="fx-name"><i class="fas fa-water"></i> Space (Reverb)</span>
+                            <label class="fx-switch">
+                                <input type="checkbox" id="toggle-reverb">
+                                <span class="fx-switch-slider"></span>
+                            </label>
+                        </div>
+                        <div class="fx-card-body">
+                            <div class="fx-param">
+                                <div class="fx-param-info">
+                                    <label>Decay</label>
+                                    <span id="reverb-decay-val">2.5s</span>
+                                </div>
+                                <input type="range" class="fx-param-slider" id="reverb-decay" min="0.5" max="10" step="0.1" value="2.5">
+                            </div>
+                            <div class="fx-param">
+                                <div class="fx-param-info">
+                                    <label>Mix</label>
+                                    <span id="reverb-mix-val">50%</span>
+                                </div>
+                                <input type="range" class="fx-param-slider" id="reverb-mix" min="0" max="100" step="1" value="50">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Delay Card -->
+                    <div class="fx-card" id="fx-card-delay" data-fx="delay">
+                        <div class="fx-card-header">
+                            <span class="fx-name"><i class="fas fa-sync-alt"></i> Echo (Delay)</span>
+                            <label class="fx-switch">
+                                <input type="checkbox" id="toggle-delay">
+                                <span class="fx-switch-slider"></span>
+                            </label>
+                        </div>
+                        <div class="fx-card-body">
+                            <div class="fx-param">
+                                <div class="fx-param-info">
+                                    <label>Time</label>
+                                    <span id="delay-time-val">1/8n</span>
+                                </div>
+                                <select class="fx-param-select" id="delay-time">
+                                    <option value="16n">1/16 Beat</option>
+                                    <option value="8n" selected>1/8 Beat</option>
+                                    <option value="4n">1/4 Beat</option>
+                                    <option value="2n">1/2 Beat</option>
+                                </select>
+                            </div>
+                            <div class="fx-param">
+                                <div class="fx-param-info">
+                                    <label>Feedback</label>
+                                    <span id="delay-feedback-val">30%</span>
+                                </div>
+                                <input type="range" class="fx-param-slider" id="delay-feedback" min="0" max="95" step="5" value="30">
+                            </div>
+                            <div class="fx-param">
+                                <div class="fx-param-info">
+                                    <label>Mix</label>
+                                    <span id="delay-mix-val">50%</span>
+                                </div>
+                                <input type="range" class="fx-param-slider" id="delay-mix" min="0" max="100" step="1" value="50">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Distortion Card -->
+                    <div class="fx-card" id="fx-card-distortion" data-fx="distortion">
+                        <div class="fx-card-header">
+                            <span class="fx-name"><i class="fas fa-bolt"></i> Crush (Distortion)</span>
+                            <label class="fx-switch">
+                                <input type="checkbox" id="toggle-distortion">
+                                <span class="fx-switch-slider"></span>
+                            </label>
+                        </div>
+                        <div class="fx-card-body">
+                            <div class="fx-param">
+                                <div class="fx-param-info">
+                                    <label>Drive</label>
+                                    <span id="distortion-drive-val">40%</span>
+                                </div>
+                                <input type="range" class="fx-param-slider" id="distortion-drive" min="0" max="100" step="5" value="40">
+                            </div>
+                            <div class="fx-param">
+                                <div class="fx-param-info">
+                                    <label>Mix</label>
+                                    <span id="distortion-mix-val">50%</span>
+                                </div>
+                                <input type="range" class="fx-param-slider" id="distortion-mix" min="0" max="100" step="1" value="50">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Chorus Card -->
+                    <div class="fx-card" id="fx-card-chorus" data-fx="chorus">
+                        <div class="fx-card-header">
+                            <span class="fx-name"><i class="fas fa-layer-group"></i> Mod (Chorus)</span>
+                            <label class="fx-switch">
+                                <input type="checkbox" id="toggle-chorus">
+                                <span class="fx-switch-slider"></span>
+                            </label>
+                        </div>
+                        <div class="fx-card-body">
+                            <div class="fx-param">
+                                <div class="fx-param-info">
+                                    <label>Rate</label>
+                                    <span id="chorus-rate-val">1.5Hz</span>
+                                </div>
+                                <input type="range" class="fx-param-slider" id="chorus-rate" min="0.1" max="10" step="0.1" value="1.5">
+                            </div>
+                            <div class="fx-param">
+                                <div class="fx-param-info">
+                                    <label>Depth</label>
+                                    <span id="chorus-depth-val">70%</span>
+                                </div>
+                                <input type="range" class="fx-param-slider" id="chorus-depth" min="0" max="100" step="5" value="70">
+                            </div>
+                            <div class="fx-param">
+                                <div class="fx-param-info">
+                                    <label>Mix</label>
+                                    <span id="chorus-mix-val">50%</span>
+                                </div>
+                                <input type="range" class="fx-param-slider" id="chorus-mix" min="0" max="100" step="1" value="50">
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- Live Audio Visualizer -->
-            <div class="live-visualizer-section">
+            <!-- <div class="live-visualizer-section">
                 <div class="live-vis-header">
                     <h3><i class="fas fa-chart-bar"></i> Live Spectrum</h3>
                     <div class="vis-mode-selector">
@@ -237,12 +338,12 @@
                     </div>
                 </div>
                 <canvas id="live-visualizer-canvas" class="live-visualizer-canvas"></canvas>
-            </div>
+            </div> -->
 
             <!-- Chord Generator -->
-            <div class="chord-generator-section">
+            <!-- <div class="chord-generator-section">
                 <div class="chord-gen-header">
-                    <h3><i class="fas fa-grip-horizontal"></i> Chord Progressions</h3>
+                    <h3><i class="fas fa-grip-horizontal"></i> Diatonic Chord Processor</h3>
                 </div>
                 <div class="chord-key-row">
                     <div class="key-select-group">
@@ -273,14 +374,51 @@
                             <option value="blues">Blues</option>
                         </select>
                     </div>
+                    <div class="key-select-group">
+                        <label>Voicing</label>
+                        <select id="chord-voicing-select" class="instrument-select">
+                            <option value="triad" selected>Triad</option>
+                            <option value="7th">7th (Jazz)</option>
+                            <option value="9th">9th (Lush)</option>
+                            <option value="sus">Suspended</option>
+                        </select>
+                    </div>
+                    <div class="key-select-group">
+                        <label>Style</label>
+                        <select id="chord-style-select" class="instrument-select">
+                            <option value="block" selected>Block</option>
+                            <option value="strum">Strum</option>
+                            <option value="arp-up">Arp Up</option>
+                            <option value="arp-down">Arp Down</option>
+                        </select>
+                    </div>
                 </div>
+
+                
+                <div class="chord-section-title"><i class="fas fa-th-large"></i> Scale Chord Pads</div>
+                <div class="chord-pads-grid" id="chord-pads-grid">
+                
+                </div>
+
+
+                <div class="chord-section-title"><i class="fas fa-history"></i> Chord Progressions</div>
                 <div class="chord-progression-btns" id="chord-progression-btns">
-                    <!-- Generated by JS -->
+
                 </div>
-                <button id="play-chord-prog-btn" class="btn-chord-play">
-                    <i class="fas fa-play"></i> Play Progression
-                </button>
-            </div>
+
+                <div class="chord-recording-row">
+                    <button id="chord-record-btn" class="btn-chord-record">
+                        <i class="fas fa-circle"></i> Record Chords
+                    </button>
+                    <button id="play-chord-prog-btn" class="btn-chord-play-prog">
+                        <i class="fas fa-play"></i> Play Progression
+                    </button>
+                    <button id="chord-clear-btn" class="btn-chord-clear">
+                        <i class="fas fa-trash-alt"></i> Clear
+                    </button>
+                </div>
+                <div id="chord-recorded-clips" class="recorded-clips"></div>
+            </div> -->
 
             <!-- Master Output Section -->
             <div class="master-output-section">
@@ -332,10 +470,10 @@
                 <div id="recorded-clips" class="recorded-clips"></div>
             </div>
 
-            <!-- Piano Keyboard Section -->
+            <!-- Piano Roll Section -->
             <div class="piano-section">
                 <div class="piano-header">
-                    <h3><i class="fas fa-keyboard"></i> Piano</h3>
+                    <h3><i class="fas fa-keyboard"></i> Piano Roll</h3>
                     <div class="piano-header-controls">
                         <select id="instrument-select" class="instrument-select">
                             <option value="piano">🎹 Grand Piano</option>
@@ -348,23 +486,21 @@
                         <button id="scale-lock-btn" class="btn-tool btn-scale-lock" title="Lock to Scale">
                             <i class="fas fa-lock-open"></i>
                         </button>
+                        <button id="piano-clear-btn" class="btn-piano-clear" title="Clear Grid">
+                            <i class="fas fa-trash"></i>
+                        </button>
                     </div>
                 </div>
-                <div class="piano-container">
-                    <div class="piano-keys" id="piano-keys">
+                <div class="piano-roll-container">
+                    <div class="piano-roll-sidebar" id="piano-roll-sidebar">
                         <!-- Keys generated by JS -->
                     </div>
+                    <div class="piano-roll-grid-wrapper">
+                        <div class="piano-roll-grid" id="piano-roll-grid">
+                            <!-- Grid cells generated by JS -->
+                        </div>
+                    </div>
                 </div>
-                <div class="piano-controls">
-                    <button id="piano-record-btn" class="btn-piano-record">
-                        <i class="fas fa-circle"></i>
-                    </button>
-                    <span class="piano-label">Tap keys to play!</span>
-                    <button id="piano-clear-btn" class="btn-piano-clear">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
-                <div id="piano-recorded-clips" class="recorded-clips"></div>
             </div>
 
             <!-- Share Button -->
