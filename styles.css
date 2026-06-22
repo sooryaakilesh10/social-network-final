@@ -2131,9 +2131,10 @@ body {
 .piano-roll-grid {
     display: grid;
     grid-template-rows: repeat(13, var(--piano-row-height));
-    grid-template-columns: repeat(var(--grid-steps, 8), var(--piano-cell-width));
+    grid-template-columns: repeat(var(--grid-steps, 8), minmax(var(--piano-cell-width), 1fr));
     height: max-content;
-    width: max-content;
+    width: 100%;
+    min-width: max-content;
     gap: 3px;
     padding: 0;
     position: relative; /* Essential for relative overlay grids */

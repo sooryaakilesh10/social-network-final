@@ -21,7 +21,7 @@ const AppState = {
     voiceRecordingUrl: null,
     pianoRecordingUrl: null,
     pianoNotes: [],
-    pianoDefaultDuration: 4,
+    pianoDefaultDuration: 1,
     pianoZoomWidth: 60,
     pianoZoomHeight: 28,
     selectedNoteId: null,
@@ -422,6 +422,7 @@ function regenerateStepIndicators() {
     if (!container) return;
 
     container.innerHTML = '';
+    container.style.gridTemplateColumns = `60px repeat(${AppState.gridSteps}, minmax(34px, 1fr))`;
 
     for (let i = 0; i < AppState.gridSteps; i++) {
         const indicator = document.createElement('div');
@@ -1344,10 +1345,7 @@ function loadPianoState() {
     if (savedZoomHeight) {
         AppState.pianoZoomHeight = parseInt(savedZoomHeight);
     }
-    const savedDefaultDuration = localStorage.getItem('loopflow_piano_default_duration');
-    if (savedDefaultDuration) {
-        AppState.pianoDefaultDuration = parseInt(savedDefaultDuration);
-    }
+    // Removed loading of savedDefaultDuration to force it to default to 1
 }
 
 function savePianoState() {
@@ -1535,6 +1533,8 @@ function generatePianoRollGrid() {
             cell.className = `piano-roll-cell ${keyData.type}-row`;
             cell.dataset.row = row;
             cell.dataset.step = step;
+            cell.style.gridRow = row + 1;
+            cell.style.gridColumn = step + 1;
 
             // Click listener — only create note if the click is directly on the cell,
             // not on a note block that overlays it.
