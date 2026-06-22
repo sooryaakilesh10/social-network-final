@@ -1192,7 +1192,7 @@ function saveRecording() {
             <button class="btn-play-clip" onclick="playVoiceClip(event, '${url}', '${clipId}')">
                 <i class="fas fa-play"></i> Play
             </button>
-            <button class="btn-add-to-beat" onclick="addVoiceToBeat('${url}')">
+            <button class="btn-add-to-beat" onclick="addVoiceToBeat('${url}', '${clipId}', '${timestamp}')">
                 <i class="fas fa-plus"></i> Add to Beat
             </button>
         </div>
@@ -1237,9 +1237,9 @@ function playVoiceClip(e, url, clipId) {
 }
 
 
-let arrangeVoiceBuffer = null;
+let arrangeVoiceBuffers = {};
 
-function addVoiceToBeat(url) {
+function addVoiceToBeat(url, clipId, clipName) {
     AppState.voiceRecordingUrl = url;
 
     // Remove existing voice track if any
@@ -1248,7 +1248,7 @@ function addVoiceToBeat(url) {
         existingVoiceTrack.remove();
     }
 
-    // Create new voice track as a full-width bar
+    // Create new voice track as a full-width bar (for Create tab)
     const voiceTrackBar = document.createElement('div');
     voiceTrackBar.id = 'voice-track-bar';
     voiceTrackBar.className = 'voice-track-bar';
@@ -1270,10 +1270,33 @@ function addVoiceToBeat(url) {
         sequencerContainer.parentNode.insertBefore(voiceTrackBar, sequencerContainer.nextSibling);
     }
 
+    // Add to Arrange palette if not exists
+    const palette = document.getElementById('arrange-palette-btns');
+    if (palette && !document.getElementById('palette-voice-' + clipId)) {
+        const btn = document.createElement('button');
+        btn.className = 'palette-btn palette-voice';
+        btn.id = 'palette-voice-' + clipId;
+        btn.dataset.pattern = 'VOICE_' + clipId;
+        btn.innerHTML = `<i class="fas fa-microphone"></i> Voice ${clipName || ''}`;
+        
+        btn.addEventListener('click', () => {
+            ArrangementState.eraseMode = false;
+            ArrangementState.paintModePattern = btn.dataset.pattern;
+            document.querySelectorAll('.palette-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        });
+        
+        // Insert before divider if possible, otherwise append
+        palette.appendChild(btn);
+    }
+
     // Load Tone.Buffer for precise arrangement playback
     if (typeof Tone !== 'undefined') {
-        arrangeVoiceBuffer = new Tone.Buffer(url, () => {
+        arrangeVoiceBuffers[clipId] = new Tone.Buffer(url, () => {
             showToast('Voice loaded and synced for Arrange tab!', 'success');
+            if (typeof renderArrangementClips === 'function') {
+                renderArrangementClips();
+            }
         });
     } else {
         showToast('Voice added to your beat!', 'success');
@@ -3614,20 +3637,40 @@ function renderArrangementClips() {
         clipEl.dataset.pattern = clip.patternId;
         clipEl.dataset.id = clip.id;
         
-        if (clip.patternId === 'VOICE') {
+        if (clip.patternId.startsWith('VOICE_')) {
             clipEl.innerHTML = '<i class="fas fa-microphone"></i> Voice';
         } else {
             clipEl.textContent = 'Pattern ' + clip.patternId;
         }
 
         const b = patternBanks[clip.patternId];
-        const hasData = (clip.patternId === 'VOICE' && AppState.voiceRecordingUrl) || (b && ((b.grid && b.grid.some(tr => tr.some(v=>v))) || (b.pianoNotes && b.pianoNotes.length > 0)));
+        const voiceId = clip.patternId.startsWith('VOICE_') ? clip.patternId.replace('VOICE_', '') : null;
+        const hasData = (voiceId && arrangeVoiceBuffers[voiceId]) || (b && ((b.grid && b.grid.some(tr => tr.some(v=>v))) || (b.pianoNotes && b.pianoNotes.length > 0)));
         
         const indicator = document.createElement('div');
         indicator.className = 'clip-indicator' + (hasData ? ' has-data' : '');
         clipEl.appendChild(indicator);
 
         // Individual clip interaction handled by grid delegation
+        
+        let customWidth = null;
+        if (voiceId && arrangeVoiceBuffers[voiceId]) {
+            const buffer = arrangeVoiceBuffers[voiceId];
+            if (buffer && buffer.loaded) {
+                const durationSecs = buffer.duration;
+                const stepDur = 60 / AppState.bpm / 2; // seconds per step (8th note)
+                const barDur = stepDur * AppState.gridSteps; // seconds per bar
+                const bars = durationSecs / barDur;
+                customWidth = (bars * 80) - 6; // 80px per bar minus margins
+            }
+        }
+        
+        if (customWidth) {
+            clipEl.style.right = 'auto'; // override CSS inset right
+            clipEl.style.width = customWidth + 'px';
+            clipEl.style.zIndex = '5'; // to appear above next cells
+        }
+        
         cell.appendChild(clipEl);
     });
 }
@@ -3738,9 +3781,11 @@ async function toggleSongPlayback() {
                 const track = ArrangementState.tracks[clip.trackIdx];
                 if (track.muted || (anySoloed && !track.solo)) return;
 
-                if (clip.patternId === 'VOICE') {
-                    if (stepInBar === 0 && arrangeVoiceBuffer && arrangeVoiceBuffer.loaded) {
-                        const voicePlayer = new Tone.Player(arrangeVoiceBuffer).toDestination();
+                if (clip.patternId.startsWith('VOICE_')) {
+                    const voiceId = clip.patternId.replace('VOICE_', '');
+                    const voiceBuffer = arrangeVoiceBuffers[voiceId];
+                    if (stepInBar === 0 && voiceBuffer && voiceBuffer.loaded) {
+                        const voicePlayer = new Tone.Player(voiceBuffer).toDestination();
                         // Optional: route through FX chain if we had a dedicated voice fx node
                         voicePlayer.start(time);
                     }
