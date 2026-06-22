@@ -20,7 +20,11 @@ const AppState = {
     likedBeats: new Set(),
     voiceRecordingUrl: null,
     pianoRecordingUrl: null,
-    pianoGrid: Array(13).fill(null).map(() => Array(8).fill(false)),
+    pianoNotes: [],
+    pianoDefaultDuration: 4,
+    pianoZoomWidth: 60,
+    pianoZoomHeight: 28,
+    selectedNoteId: null,
     isPianoPlaying: false,
     currentPianoStep: 0,
     fxActive: { reverb: false, delay: false, distortion: false, chorus: false },
@@ -178,24 +182,25 @@ function initAudio() {
     synths.fx.volume.value = -8;
 
     // Create the sequencer loop
+    // Capture the step BEFORE advancing so audio + visuals use the same value.
     loop = new Tone.Loop((time) => {
-        playStep(time);
-        updateStepIndicator();
+        const step = AppState.currentStep;
+        playStep(time, step);
+        AppState.currentStep = (AppState.currentStep + 1) % AppState.gridSteps;
     }, "8n");
 
     // Create the piano-only solo loop
     pianoLoop = new Tone.Loop((time) => {
-        playPianoStep(time);
-        updatePianoStepIndicator();
+        const step = AppState.currentPianoStep;
+        playPianoStep(time, step);
+        AppState.currentPianoStep = (AppState.currentPianoStep + 1) % AppState.gridSteps;
     }, "8n");
 
     Tone.Transport.bpm.value = AppState.bpm;
     AppState.audioContextStarted = true;
 }
 
-function playStep(time) {
-    const step = AppState.currentStep;
-
+function playStep(time, step) {
     // Play each active cell
     if (AppState.grid[0][step]) synths.kick.triggerAttackRelease("C1", "8n", time);
     if (AppState.grid[1][step]) synths.snare.triggerAttackRelease("8n", time);
@@ -205,24 +210,23 @@ function playStep(time) {
     if (AppState.grid[5][step]) synths.synth.triggerAttackRelease(["C4", "E4", "G4"], "8n", time);
     if (AppState.grid[6][step]) synths.fx.triggerAttackRelease("C5", "8n", time);
 
-    // Play active cells of piano roll
-    for (let row = 0; row < 13; row++) {
-        if (AppState.pianoGrid && AppState.pianoGrid[row] && AppState.pianoGrid[row][step]) {
-            if (pianoSynth) {
-                pianoSynth.triggerAttackRelease(pianoNotes[row].note, "8n", time);
+    // Play active piano notes starting at this step
+    if (AppState.pianoNotes) {
+        AppState.pianoNotes.forEach(note => {
+            if (note.step === step) {
+                if (pianoSynth && pianoNotes[note.row]) {
+                    const durationSeconds = Tone.Time("8n").toSeconds() * note.duration;
+                    pianoSynth.triggerAttackRelease(pianoNotes[note.row].note, durationSeconds, time);
+                }
             }
-        }
+        });
     }
 
-    // Visual feedback
+    // Visual feedback — scheduled on the same `time` so highlight is frame-accurate
     Tone.Draw.schedule(() => {
         highlightPlayingStep(step);
         updatePianoProgressBar(step);
     }, time);
-}
-
-function updateStepIndicator() {
-    AppState.currentStep = (AppState.currentStep + 1) % AppState.gridSteps;
 }
 
 function highlightPlayingStep(step) {
@@ -235,10 +239,17 @@ function highlightPlayingStep(step) {
         cell.classList.toggle('playing', cellStep === step);
     });
 
-    // Highlight piano roll columns
+    // Highlight piano roll columns and note blocks
     document.querySelectorAll('.piano-roll-cell').forEach((cell) => {
         const cellStep = parseInt(cell.dataset.step);
         cell.classList.toggle('playing', cellStep === step);
+    });
+
+    document.querySelectorAll('.piano-note-block').forEach((noteEl) => {
+        const noteStep = parseInt(noteEl.dataset.step);
+        const noteDuration = parseInt(noteEl.dataset.duration);
+        const isPlaying = step >= noteStep && step < noteStep + noteDuration;
+        noteEl.classList.toggle('playing', isPlaying);
     });
 }
 
@@ -247,9 +258,9 @@ function updatePianoProgressBar(step) {
     // This function is kept for compatibility but doesn't do discrete updates
 }
 
-function togglePlayback() {
+async function togglePlayback() {
     if (!AppState.audioContextStarted) {
-        Tone.start();
+        await Tone.start();
         initAudio();
     }
 
@@ -380,18 +391,15 @@ function extendGrid(newStepCount) {
         }
     }
 
-    // Extend each track in the piano roll grid
-    for (let row = 0; row < 13; row++) {
-        if (!AppState.pianoGrid[row]) {
-            AppState.pianoGrid[row] = [];
-        }
-        if (newStepCount > oldStepCount) {
-            while (AppState.pianoGrid[row].length < newStepCount) {
-                AppState.pianoGrid[row].push(false);
+    // Extend/shrink piano roll notes
+    if (AppState.pianoNotes) {
+        AppState.pianoNotes = AppState.pianoNotes.filter(note => note.step < newStepCount);
+        AppState.pianoNotes.forEach(note => {
+            if (note.step + note.duration > newStepCount) {
+                note.duration = newStepCount - note.step;
             }
-        } else if (newStepCount < oldStepCount) {
-            AppState.pianoGrid[row] = AppState.pianoGrid[row].slice(0, newStepCount);
-        }
+        });
+        savePianoState();
     }
 
     // Update grid steps
@@ -638,13 +646,8 @@ function clearGrid() {
             }
 
             // Clear piano roll grid
-            for (let row = 0; row < 13; row++) {
-                for (let step = 0; step < AppState.gridSteps; step++) {
-                    if (AppState.pianoGrid && AppState.pianoGrid[row]) {
-                        AppState.pianoGrid[row][step] = false;
-                    }
-                }
-            }
+            AppState.pianoNotes = [];
+            savePianoState();
 
             // Update UI to reflect cleared grid
             document.querySelectorAll('.grid-cell').forEach(cell => {
@@ -652,9 +655,7 @@ function clearGrid() {
             });
 
             // Update piano roll UI to reflect cleared grid
-            document.querySelectorAll('.piano-roll-cell').forEach(cell => {
-                cell.classList.remove('active');
-            });
+            renderNotes();
 
             // Haptic feedback
             if (navigator.vibrate) {
@@ -1235,6 +1236,8 @@ function playVoiceClip(e, url, clipId) {
 }
 
 
+let arrangeVoiceBuffer = null;
+
 function addVoiceToBeat(url) {
     AppState.voiceRecordingUrl = url;
 
@@ -1262,9 +1265,18 @@ function addVoiceToBeat(url) {
 
     // Insert after the sequencer container
     const sequencerContainer = document.querySelector('.sequencer-container');
-    sequencerContainer.parentNode.insertBefore(voiceTrackBar, sequencerContainer.nextSibling);
+    if (sequencerContainer) {
+        sequencerContainer.parentNode.insertBefore(voiceTrackBar, sequencerContainer.nextSibling);
+    }
 
-    showToast('Voice added to your beat!', 'success');
+    // Load Tone.Buffer for precise arrangement playback
+    if (typeof Tone !== 'undefined') {
+        arrangeVoiceBuffer = new Tone.Buffer(url, () => {
+            showToast('Voice loaded and synced for Arrange tab!', 'success');
+        });
+    } else {
+        showToast('Voice added to your beat!', 'success');
+    }
 }
 
 // ============================================
@@ -1316,7 +1328,52 @@ const pianoNotes = [
     { note: 'C4', type: 'white', label: 'C4' }
 ];
 
+function loadPianoState() {
+    const savedNotes = localStorage.getItem('loopflow_piano_notes');
+    if (savedNotes) {
+        AppState.pianoNotes = JSON.parse(savedNotes);
+    } else {
+        AppState.pianoNotes = [];
+    }
+
+    const savedZoomWidth = localStorage.getItem('loopflow_piano_zoom_width');
+    if (savedZoomWidth) {
+        AppState.pianoZoomWidth = parseInt(savedZoomWidth);
+    }
+    const savedZoomHeight = localStorage.getItem('loopflow_piano_zoom_height');
+    if (savedZoomHeight) {
+        AppState.pianoZoomHeight = parseInt(savedZoomHeight);
+    }
+    const savedDefaultDuration = localStorage.getItem('loopflow_piano_default_duration');
+    if (savedDefaultDuration) {
+        AppState.pianoDefaultDuration = parseInt(savedDefaultDuration);
+    }
+}
+
+function savePianoState() {
+    localStorage.setItem('loopflow_piano_notes', JSON.stringify(AppState.pianoNotes));
+    localStorage.setItem('loopflow_piano_zoom_width', AppState.pianoZoomWidth);
+    localStorage.setItem('loopflow_piano_zoom_height', AppState.pianoZoomHeight);
+    localStorage.setItem('loopflow_piano_default_duration', AppState.pianoDefaultDuration);
+}
+
+function applyPianoZoom() {
+    const container = document.querySelector('.piano-roll-container');
+    if (!container) return;
+    container.style.setProperty('--piano-cell-width', `${AppState.pianoZoomWidth}px`);
+    container.style.setProperty('--piano-row-height', `${AppState.pianoZoomHeight}px`);
+    
+    // Update inputs
+    const widthSlider = document.getElementById('slider-zoom-width');
+    if (widthSlider) widthSlider.value = AppState.pianoZoomWidth;
+    const heightSlider = document.getElementById('slider-zoom-height');
+    if (heightSlider) heightSlider.value = AppState.pianoZoomHeight;
+}
+
 function initPiano() {
+    loadPianoState();
+    applyPianoZoom();
+
     const sidebar = document.getElementById('piano-roll-sidebar');
     const instrumentSelect = document.getElementById('instrument-select');
     const clearBtn = document.getElementById('piano-clear-btn');
@@ -1345,6 +1402,97 @@ function initPiano() {
             });
 
             sidebar.appendChild(key);
+        });
+    }
+
+    // Zoom and default options
+    const widthSlider = document.getElementById('slider-zoom-width');
+    const widthInBtn = document.getElementById('btn-zoom-width-in');
+    const widthOutBtn = document.getElementById('btn-zoom-width-out');
+
+    if (widthSlider) {
+        widthSlider.addEventListener('input', (e) => {
+            AppState.pianoZoomWidth = parseInt(e.target.value);
+            applyPianoZoom();
+            savePianoState();
+        });
+    }
+    if (widthInBtn) {
+        widthInBtn.addEventListener('click', () => {
+            AppState.pianoZoomWidth = Math.min(150, AppState.pianoZoomWidth + 10);
+            applyPianoZoom();
+            savePianoState();
+        });
+    }
+    if (widthOutBtn) {
+        widthOutBtn.addEventListener('click', () => {
+            AppState.pianoZoomWidth = Math.max(30, AppState.pianoZoomWidth - 10);
+            applyPianoZoom();
+            savePianoState();
+        });
+    }
+
+    const heightSlider = document.getElementById('slider-zoom-height');
+    const heightInBtn = document.getElementById('btn-zoom-height-in');
+    const heightOutBtn = document.getElementById('btn-zoom-height-out');
+
+    if (heightSlider) {
+        heightSlider.addEventListener('input', (e) => {
+            AppState.pianoZoomHeight = parseInt(e.target.value);
+            applyPianoZoom();
+            savePianoState();
+        });
+    }
+    if (heightInBtn) {
+        heightInBtn.addEventListener('click', () => {
+            AppState.pianoZoomHeight = Math.min(60, AppState.pianoZoomHeight + 4);
+            applyPianoZoom();
+            savePianoState();
+        });
+    }
+    if (heightOutBtn) {
+        heightOutBtn.addEventListener('click', () => {
+            AppState.pianoZoomHeight = Math.max(16, AppState.pianoZoomHeight - 4);
+            applyPianoZoom();
+            savePianoState();
+        });
+    }
+
+    const durationSelect = document.getElementById('piano-default-duration-select');
+    if (durationSelect) {
+        durationSelect.value = AppState.pianoDefaultDuration;
+        durationSelect.addEventListener('change', (e) => {
+            AppState.pianoDefaultDuration = parseInt(e.target.value);
+            savePianoState();
+        });
+    }
+
+    const resetViewBtn = document.getElementById('btn-zoom-reset');
+    if (resetViewBtn) {
+        resetViewBtn.addEventListener('click', () => {
+            AppState.pianoZoomWidth = 60;
+            AppState.pianoZoomHeight = 28;
+            applyPianoZoom();
+            savePianoState();
+        });
+    }
+
+    // Scroll synchronization
+    const gridWrapper = document.querySelector('.piano-roll-grid-wrapper');
+    if (gridWrapper && sidebar) {
+        gridWrapper.addEventListener('scroll', () => {
+            sidebar.scrollTop = gridWrapper.scrollTop;
+        });
+        sidebar.addEventListener('wheel', (e) => {
+            gridWrapper.scrollTop += e.deltaY;
+            e.preventDefault();
+        }, { passive: false });
+
+        // Clicking empty space deselects notes
+        gridWrapper.addEventListener('click', (e) => {
+            if (e.target === gridWrapper || e.target === document.getElementById('piano-roll-grid')) {
+                deselectNotes();
+            }
         });
     }
 
@@ -1378,8 +1526,7 @@ function generatePianoRollGrid() {
     if (!grid) return;
 
     grid.innerHTML = '';
-    grid.style.gridTemplateColumns = `repeat(${AppState.gridSteps}, minmax(34px, 1fr))`;
-    grid.style.gridTemplateRows = `repeat(13, 1fr)`;
+    grid.style.setProperty('--grid-steps', AppState.gridSteps);
 
     for (let row = 0; row < 13; row++) {
         const keyData = pianoNotes[row];
@@ -1389,16 +1536,16 @@ function generatePianoRollGrid() {
             cell.dataset.row = row;
             cell.dataset.step = step;
 
-            // If note is active in AppState, apply active class
-            if (AppState.pianoGrid && AppState.pianoGrid[row] && AppState.pianoGrid[row][step]) {
-                cell.classList.add('active');
-            }
-
-            // Click listener
-            cell.addEventListener('click', () => togglePianoCell(row, step));
+            // Click listener — only create note if the click is directly on the cell,
+            // not on a note block that overlays it.
+            cell.addEventListener('click', (e) => {
+                if (e.target.closest('.piano-note-block')) return;
+                createNoteAt(row, step);
+            });
             cell.addEventListener('touchstart', (e) => {
+                if (e.target.closest('.piano-note-block')) return;
                 e.preventDefault();
-                togglePianoCell(row, step);
+                createNoteAt(row, step);
             });
 
             grid.appendChild(cell);
@@ -1407,61 +1554,328 @@ function generatePianoRollGrid() {
 
     // Apply scale locking visual states if enabled
     applyScaleLock();
+
+    // Render active note blocks
+    renderNotes();
 }
 
-function togglePianoCell(row, step) {
-    if (!AppState.pianoGrid || !AppState.pianoGrid[row]) return;
+function getClosestScaleRow(targetRow) {
+    if (!scaleLockEnabled) return targetRow;
+    const scaleNotes = getScaleNotes(AppState.selectedChordKey, AppState.selectedScale);
+    
+    let bestRow = targetRow;
+    let minDistance = Infinity;
+    
+    for (let row = 0; row < 13; row++) {
+        const noteName = pianoNotes[row].note.replace(/\d+/, '');
+        if (scaleNotes.includes(noteName)) {
+            const distance = Math.abs(row - targetRow);
+            if (distance < minDistance) {
+                minDistance = distance;
+                bestRow = row;
+            }
+        }
+    }
+    return bestRow;
+}
 
+function createNoteAt(row, step) {
     // Start audio context if needed
     if (!AppState.audioContextStarted) {
         Tone.start();
         initAudio();
     }
 
-    const isActive = !AppState.pianoGrid[row][step];
-    AppState.pianoGrid[row][step] = isActive;
-
-    const cell = document.querySelector(`.piano-roll-cell[data-row="${row}"][data-step="${step}"]`);
-    if (cell) {
-        cell.classList.toggle('active', isActive);
+    // Check if row is disabled under scale lock
+    if (scaleLockEnabled) {
+        const scaleNotes = getScaleNotes(AppState.selectedChordKey, AppState.selectedScale);
+        const noteName = pianoNotes[row].note.replace(/\d+/, '');
+        if (!scaleNotes.includes(noteName)) {
+            // Snap to closest valid scale key
+            row = getClosestScaleRow(row);
+        }
     }
 
-    // Play preview sound when activating a note
-    if (isActive) {
-        if (pianoSynth) {
-            pianoSynth.triggerAttackRelease(pianoNotes[row].note, '8n');
-        }
+    const defaultDur = AppState.pianoDefaultDuration || 4;
+    const duration = Math.min(defaultDur, AppState.gridSteps - step);
+    if (duration <= 0) return;
+
+    // Check if any existing note in the same row overlaps the proposed range
+    const overlaps = AppState.pianoNotes.some(n =>
+        n.row === row && n.step < step + duration && n.step + n.duration > step
+    );
+    if (overlaps) return;
+
+    const newNote = {
+        id: Date.now() + Math.random(),
+        row: row,
+        step: step,
+        duration: duration
+    };
+
+    AppState.pianoNotes.push(newNote);
+    AppState.selectedNoteId = newNote.id;
+
+    // Play preview sound
+    if (pianoSynth && pianoNotes[row]) {
+        pianoSynth.triggerAttackRelease(pianoNotes[row].note, '8n');
     }
 
     // Haptic feedback
     if (navigator.vibrate) {
         navigator.vibrate(15);
     }
+
+    savePianoState();
+    renderNotes();
+}
+
+function deleteNote(id) {
+    AppState.pianoNotes = AppState.pianoNotes.filter(n => n.id !== id);
+    if (AppState.selectedNoteId === id) {
+        AppState.selectedNoteId = null;
+    }
+    savePianoState();
+    renderNotes();
+    
+    if (navigator.vibrate) {
+        navigator.vibrate(10);
+    }
+}
+
+function selectNote(id) {
+    AppState.selectedNoteId = id;
+    document.querySelectorAll('.piano-note-block').forEach(el => {
+        const isSelected = parseFloat(el.dataset.id) === id;
+        el.classList.toggle('selected', isSelected);
+    });
+}
+
+function deselectNotes() {
+    AppState.selectedNoteId = null;
+    document.querySelectorAll('.piano-note-block').forEach(el => {
+        el.classList.remove('selected');
+    });
+}
+
+function renderNotes() {
+    // Remove existing note elements
+    document.querySelectorAll('.piano-note-block').forEach(el => el.remove());
+
+    const grid = document.getElementById('piano-roll-grid');
+    if (!grid) return;
+
+    AppState.pianoNotes.forEach(note => {
+        const noteEl = document.createElement('div');
+        noteEl.className = 'piano-note-block';
+        
+        const keyData = pianoNotes[note.row];
+        if (keyData && keyData.type === 'black') {
+            noteEl.classList.add('black-key-note');
+        }
+
+        noteEl.dataset.id = note.id;
+        noteEl.dataset.row = note.row;
+        noteEl.dataset.step = note.step;
+        noteEl.dataset.duration = note.duration;
+
+        noteEl.style.setProperty('--note-row', note.row + 1);
+        noteEl.style.setProperty('--note-col', `${note.step + 1} / span ${note.duration}`);
+
+        if (note.id === AppState.selectedNoteId) {
+            noteEl.classList.add('selected');
+        }
+
+        // Left handle
+        const leftHandle = document.createElement('div');
+        leftHandle.className = 'note-resize-handle left-handle';
+        noteEl.appendChild(leftHandle);
+
+        // Content
+        const content = document.createElement('div');
+        content.className = 'note-content';
+        content.textContent = keyData ? keyData.label : '';
+        noteEl.appendChild(content);
+
+        // Delete button
+        const deleteBtn = document.createElement('div');
+        deleteBtn.className = 'note-delete-btn';
+        deleteBtn.innerHTML = '&times;';
+        deleteBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            deleteNote(note.id);
+        });
+        noteEl.appendChild(deleteBtn);
+
+        // Right handle
+        const rightHandle = document.createElement('div');
+        rightHandle.className = 'note-resize-handle right-handle';
+        noteEl.appendChild(rightHandle);
+
+        // Double click to delete
+        noteEl.addEventListener('dblclick', (e) => {
+            e.stopPropagation();
+            deleteNote(note.id);
+        });
+
+        // Event listeners for dragging
+        noteEl.addEventListener('mousedown', (e) => {
+            if (e.target.classList.contains('note-delete-btn')) return;
+            startNoteDrag(e, note.id);
+        });
+        noteEl.addEventListener('touchstart', (e) => {
+            if (e.target.classList.contains('note-delete-btn')) return;
+            startNoteDrag(e, note.id);
+        }, { passive: false });
+
+        grid.appendChild(noteEl);
+    });
+}
+
+function startNoteDrag(e, id) {
+    if (e.cancelable) e.preventDefault();
+    selectNote(id);
+
+    const isLeft = e.target.classList.contains('left-handle');
+    const isRight = e.target.classList.contains('right-handle');
+    const isMove = !isLeft && !isRight;
+
+    const startEvent = e.touches ? e.touches[0] : e;
+    const clientX = startEvent.clientX;
+    const clientY = startEvent.clientY;
+
+    const note = AppState.pianoNotes.find(n => n.id === id);
+    if (!note) return;
+
+    const initRow = note.row;
+    const initStep = note.step;
+    const initDuration = note.duration;
+
+    const grid = document.getElementById('piano-roll-grid');
+    if (!grid) return;
+    
+    let gridRect = grid.getBoundingClientRect();
+    let stepWidth = gridRect.width / AppState.gridSteps;
+    let rowHeight = gridRect.height / 13;
+
+    const initRelativeX = clientX - gridRect.left;
+    const initRelativeY = clientY - gridRect.top;
+    const initGridStep = Math.floor(initRelativeX / stepWidth);
+    const initGridRow = Math.floor(initRelativeY / rowHeight);
+
+    let hasMoved = false;
+
+    // Helper: checks if placing note at (row, step, duration) would overlap any other note
+    function wouldOverlap(row, step, duration) {
+        return AppState.pianoNotes.some(n =>
+            n.id !== id && n.row === row && n.step < step + duration && n.step + n.duration > step
+        );
+    }
+
+    // Add dragging class for visual feedback
+    const noteEl = document.querySelector(`.piano-note-block[data-id="${id}"]`);
+    if (noteEl) noteEl.classList.add('dragging');
+
+    function handleMove(moveEv) {
+        if (moveEv.cancelable) moveEv.preventDefault();
+        hasMoved = true;
+
+        const currentEvent = moveEv.touches ? moveEv.touches[0] : moveEv;
+        const curX = currentEvent.clientX;
+        const curY = currentEvent.clientY;
+
+        gridRect = grid.getBoundingClientRect();
+        stepWidth = gridRect.width / AppState.gridSteps;
+        rowHeight = gridRect.height / 13;
+
+        const curRelativeX = curX - gridRect.left;
+        const curRelativeY = curY - gridRect.top;
+        const curGridStep = Math.floor(curRelativeX / stepWidth);
+        const curGridRow = Math.floor(curRelativeY / rowHeight);
+
+        const deltaStep = curGridStep - initGridStep;
+        const deltaRow = curGridRow - initGridRow;
+
+        if (isMove) {
+            let newRow = initRow + deltaRow;
+            let newStep = initStep + deltaStep;
+            newRow = Math.max(0, Math.min(12, newRow));
+            newStep = Math.max(0, Math.min(AppState.gridSteps - initDuration, newStep));
+            newRow = getClosestScaleRow(newRow);
+
+            // Only apply if no overlap at new position
+            if (!wouldOverlap(newRow, newStep, initDuration)) {
+                note.row = newRow;
+                note.step = newStep;
+            }
+        } else if (isRight) {
+            let newDuration = initDuration + deltaStep;
+            newDuration = Math.max(1, Math.min(AppState.gridSteps - note.step, newDuration));
+            // Only apply if no overlap
+            if (!wouldOverlap(note.row, note.step, newDuration)) {
+                note.duration = newDuration;
+            }
+        } else if (isLeft) {
+            let newStep = initStep + deltaStep;
+            newStep = Math.max(0, Math.min(initStep + initDuration - 1, newStep));
+            let newDuration = initStep + initDuration - newStep;
+            // Only apply if no overlap
+            if (!wouldOverlap(note.row, newStep, newDuration)) {
+                note.step = newStep;
+                note.duration = newDuration;
+            }
+        }
+
+        // Live DOM style update (prevent laggy redraws)
+        const noteEl = document.querySelector(`.piano-note-block[data-id="${id}"]`);
+        if (noteEl) {
+            noteEl.style.setProperty('--note-row', note.row + 1);
+            noteEl.style.setProperty('--note-col', `${note.step + 1} / span ${note.duration}`);
+            noteEl.dataset.row = note.row;
+            noteEl.dataset.step = note.step;
+            noteEl.dataset.duration = note.duration;
+            const contentEl = noteEl.querySelector('.note-content');
+            if (contentEl && pianoNotes[note.row]) {
+                contentEl.textContent = pianoNotes[note.row].label;
+            }
+        }
+    }
+
+    function handleEnd() {
+        window.removeEventListener('mousemove', handleMove);
+        window.removeEventListener('mouseup', handleEnd);
+        window.removeEventListener('touchmove', handleMove);
+        window.removeEventListener('touchend', handleEnd);
+
+        if (hasMoved) {
+            if (isMove && note.row !== initRow) {
+                if (pianoSynth && pianoNotes[note.row]) {
+                    pianoSynth.triggerAttackRelease(pianoNotes[note.row].note, '8n');
+                }
+            }
+            savePianoState();
+        }
+        renderNotes();
+    }
+
+    window.addEventListener('mousemove', handleMove, { passive: false });
+    window.addEventListener('mouseup', handleEnd);
+    window.addEventListener('touchmove', handleMove, { passive: false });
+    window.addEventListener('touchend', handleEnd);
 }
 
 function clearPianoGrid() {
-    // Show custom confirmation dialog
     showConfirm('Clear the entire piano roll grid?')
         .then((confirmed) => {
             if (!confirmed) return;
 
-            // Clear all cells in the piano grid
-            for (let row = 0; row < 13; row++) {
-                for (let step = 0; step < AppState.gridSteps; step++) {
-                    AppState.pianoGrid[row][step] = false;
-                }
-            }
+            AppState.pianoNotes = [];
+            savePianoState();
+            renderNotes();
 
-            // Update UI to reflect cleared grid
-            document.querySelectorAll('.piano-roll-cell').forEach(cell => {
-                cell.classList.remove('active');
-            });
-
-            // Haptic feedback
             if (navigator.vibrate) {
                 navigator.vibrate([20, 20]);
             }
-
             showToast('Piano roll cleared!', 'success');
         });
 }
@@ -1475,7 +1889,6 @@ function togglePianoPlayback() {
     AppState.isPianoPlaying = !AppState.isPianoPlaying;
 
     if (AppState.isPianoPlaying) {
-        // If main loop is playing, stop it!
         if (AppState.isPlaying) {
             togglePlayback();
         }
@@ -1512,38 +1925,46 @@ function stopPianoPlayback() {
         playBtn.classList.remove('playing');
     }
 
-    // Clear highlights on cells
     document.querySelectorAll('.piano-roll-cell').forEach((cell) => {
         cell.classList.remove('playing');
     });
+    document.querySelectorAll('.piano-note-block').forEach((noteEl) => {
+        noteEl.classList.remove('playing');
+    });
 }
 
-function playPianoStep(time) {
-    const step = AppState.currentPianoStep;
-
-    // Play active cells of piano roll
-    for (let row = 0; row < 13; row++) {
-        if (AppState.pianoGrid && AppState.pianoGrid[row] && AppState.pianoGrid[row][step]) {
-            if (pianoSynth) {
-                pianoSynth.triggerAttackRelease(pianoNotes[row].note, "8n", time);
+function playPianoStep(time, step) {
+    // Play active piano notes starting at this step
+    if (AppState.pianoNotes) {
+        AppState.pianoNotes.forEach(note => {
+            if (note.step === step) {
+                if (pianoSynth && pianoNotes[note.row]) {
+                    const durationSeconds = Tone.Time("8n").toSeconds() * note.duration;
+                    pianoSynth.triggerAttackRelease(pianoNotes[note.row].note, durationSeconds, time);
+                }
             }
-        }
+        });
     }
 
-    // Visual feedback
+    // Visual feedback — highlight both cells and note blocks in sync with audio
     Tone.Draw.schedule(() => {
         highlightPianoPlayingStep(step);
     }, time);
 }
 
-function updatePianoStepIndicator() {
-    AppState.currentPianoStep = (AppState.currentPianoStep + 1) % AppState.gridSteps;
-}
-
 function highlightPianoPlayingStep(step) {
+    // Highlight the playing column in the grid
     document.querySelectorAll('.piano-roll-cell').forEach((cell) => {
         const cellStep = parseInt(cell.dataset.step);
         cell.classList.toggle('playing', cellStep === step);
+    });
+
+    // Highlight note blocks that span this step
+    document.querySelectorAll('.piano-note-block').forEach((noteEl) => {
+        const noteStep = parseInt(noteEl.dataset.step);
+        const noteDuration = parseInt(noteEl.dataset.duration);
+        const isPlaying = step >= noteStep && step < noteStep + noteDuration;
+        noteEl.classList.toggle('playing', isPlaying);
     });
 }
 
@@ -2091,55 +2512,105 @@ function tickMetronome(time, step) {
 }
 
 // ============================================
-// PATTERN BANKS (A/B/C/D)
+// PATTERN BANKS (A-H)
 // ============================================
 const patternBanks = {
-    A: null, B: null, C: null, D: null
+    A: null, B: null, C: null, D: null, E: null, F: null, G: null, H: null
 };
 let currentPattern = 'A';
 
 function initPatternBanks() {
-    // Save initial grid to bank A
-    patternBanks.A = JSON.parse(JSON.stringify(AppState.grid));
+    // Save initial grid and piano notes to bank A
+    patternBanks.A = {
+        grid: JSON.parse(JSON.stringify(AppState.grid)),
+        pianoNotes: JSON.parse(JSON.stringify(AppState.pianoNotes || []))
+    };
 
     document.querySelectorAll('.pattern-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             const target = btn.dataset.pattern;
 
-            // Save current grid to current bank
-            patternBanks[currentPattern] = JSON.parse(JSON.stringify(AppState.grid));
+            // Save current state to current bank
+            patternBanks[currentPattern] = {
+                grid: JSON.parse(JSON.stringify(AppState.grid)),
+                pianoNotes: JSON.parse(JSON.stringify(AppState.pianoNotes || []))
+            };
 
             // Switch to target bank
             currentPattern = target;
 
             // Load target bank (or create empty if null)
             if (patternBanks[target]) {
-                // Ensure bank matches current grid size
                 const bank = patternBanks[target];
                 for (let t = 0; t < 8; t++) {
-                    while (bank[t].length < AppState.gridSteps) bank[t].push(false);
-                    AppState.grid[t] = bank[t].slice(0, AppState.gridSteps);
+                    while (bank.grid[t].length < AppState.gridSteps) bank.grid[t].push(false);
+                    AppState.grid[t] = bank.grid[t].slice(0, AppState.gridSteps);
                 }
+                AppState.pianoNotes = bank.pianoNotes ? JSON.parse(JSON.stringify(bank.pianoNotes)) : [];
             } else {
                 AppState.grid = Array(8).fill(null).map(() => Array(AppState.gridSteps).fill(false));
-                patternBanks[target] = JSON.parse(JSON.stringify(AppState.grid));
+                AppState.pianoNotes = [];
+                patternBanks[target] = {
+                    grid: JSON.parse(JSON.stringify(AppState.grid)),
+                    pianoNotes: []
+                };
             }
 
             // Update UI
             document.querySelectorAll('.pattern-btn').forEach(b => {
                 b.classList.toggle('active', b.dataset.pattern === target);
             });
-
-            // Refresh grid cells
-            document.querySelectorAll('.grid-cell').forEach(cell => {
-                const track = parseInt(cell.dataset.track);
-                const step = parseInt(cell.dataset.step);
-                cell.classList.toggle('active', AppState.grid[track][step]);
+            // Update arrange palette buttons if they exist
+            document.querySelectorAll('.palette-btn').forEach(b => {
+                b.classList.toggle('active', b.dataset.pattern === target);
             });
+
+            // Refresh UI
+            refreshGridUI();
+            if (typeof renderNotes === 'function') renderNotes();
 
             showToast(`Pattern ${target}`, 'success');
         });
     });
+
+    // Copy / Paste / Clear logic
+    const copyBtn = document.getElementById('copy-pattern-btn');
+    const pasteBtn = document.getElementById('paste-pattern-btn');
+    const clearBtn = document.getElementById('clear-pattern-btn');
+
+    if (copyBtn) {
+        copyBtn.addEventListener('click', () => {
+            AppState.clipboardPattern = {
+                grid: JSON.parse(JSON.stringify(AppState.grid)),
+                pianoNotes: JSON.parse(JSON.stringify(AppState.pianoNotes || []))
+            };
+            showToast('Pattern copied', 'success');
+        });
+    }
+
+    if (pasteBtn) {
+        pasteBtn.addEventListener('click', () => {
+            if (AppState.clipboardPattern) {
+                AppState.grid = JSON.parse(JSON.stringify(AppState.clipboardPattern.grid));
+                AppState.pianoNotes = JSON.parse(JSON.stringify(AppState.clipboardPattern.pianoNotes));
+                refreshGridUI();
+                if (typeof renderNotes === 'function') renderNotes();
+                showToast('Pattern pasted', 'success');
+            } else {
+                showToast('Clipboard is empty', 'info');
+            }
+        });
+    }
+
+    if (clearBtn) {
+        clearBtn.addEventListener('click', () => {
+            for (let t = 0; t < 8; t++) AppState.grid[t].fill(false);
+            AppState.pianoNotes = [];
+            refreshGridUI();
+            if (typeof renderNotes === 'function') renderNotes();
+            showToast('Pattern cleared', 'success');
+        });
+    }
 }
 
 // ============================================
@@ -2983,6 +3454,489 @@ function applyScaleLock() {
 }
 
 // ============================================
+// DAW ARRANGEMENT TIMELINE
+// ============================================
+const ArrangementState = {
+    tracks: [
+        { name: 'Drums', muted: false, solo: false },
+        { name: 'Bass', muted: false, solo: false },
+        { name: 'Synth 1', muted: false, solo: false },
+        { name: 'Synth 2', muted: false, solo: false },
+        { name: 'Melody', muted: false, solo: false },
+        { name: 'FX', muted: false, solo: false }
+    ],
+    clips: [], // { id, trackIdx, bar, patternId }
+    songLength: 16,
+    isPlayingSong: false,
+    currentBar: 0,
+    paintModePattern: 'A',
+    eraseMode: false
+};
+
+let songLoop = null;
+let songPlayAnimId = null;
+let isExporting = false;
+let songRecorder = null;
+
+function initArrangement() {
+    renderArrangementGrid();
+    setupArrangementListeners();
+}
+
+function renderArrangementGrid() {
+    const headers = document.getElementById('bar-headers');
+    const sidebar = document.getElementById('timeline-tracks-sidebar');
+    const grid = document.getElementById('timeline-grid');
+    if (!headers || !sidebar || !grid) return;
+
+    headers.innerHTML = '';
+    sidebar.innerHTML = '';
+    grid.innerHTML = '';
+
+    const lenDisplay = document.getElementById('song-length-display');
+    const lenLabel = document.getElementById('song-length-label');
+    if (lenDisplay) lenDisplay.textContent = ArrangementState.songLength;
+    if (lenLabel) lenLabel.textContent = `${ArrangementState.songLength} Bars`;
+
+    for (let bar = 0; bar < ArrangementState.songLength; bar++) {
+        const h = document.createElement('div');
+        h.className = 'bar-header';
+        h.textContent = bar + 1;
+        headers.appendChild(h);
+    }
+
+    ArrangementState.tracks.forEach((track, trackIdx) => {
+        // Sidebar
+        const t = document.createElement('div');
+        t.className = 'timeline-track-header';
+        t.innerHTML = `
+            <span class="timeline-track-name">${track.name}</span>
+            <div class="track-mini-controls">
+                <button class="track-mini-btn btn-trk-mute ${track.muted ? 'muted' : ''}" data-track="${trackIdx}">M</button>
+                <button class="track-mini-btn btn-trk-solo ${track.solo ? 'soloed' : ''}" data-track="${trackIdx}">S</button>
+            </div>
+        `;
+        sidebar.appendChild(t);
+
+        // Grid row
+        const row = document.createElement('div');
+        row.className = 'timeline-row';
+        for (let bar = 0; bar < ArrangementState.songLength; bar++) {
+            const cell = document.createElement('div');
+            cell.className = 'timeline-cell';
+            cell.dataset.track = trackIdx;
+            cell.dataset.bar = bar;
+            row.appendChild(cell);
+        }
+        grid.appendChild(row);
+    });
+
+    renderArrangementClips();
+
+    // Bind sidebar buttons
+    sidebar.querySelectorAll('.btn-trk-mute').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const tIdx = parseInt(e.target.dataset.track);
+            ArrangementState.tracks[tIdx].muted = !ArrangementState.tracks[tIdx].muted;
+            e.target.classList.toggle('muted', ArrangementState.tracks[tIdx].muted);
+        });
+    });
+    sidebar.querySelectorAll('.btn-trk-solo').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const tIdx = parseInt(e.target.dataset.track);
+            ArrangementState.tracks[tIdx].solo = !ArrangementState.tracks[tIdx].solo;
+            e.target.classList.toggle('soloed', ArrangementState.tracks[tIdx].solo);
+        });
+    });
+
+    // Painting logic on grid cells
+    let isPainting = false;
+    grid.addEventListener('mousedown', (e) => {
+        isPainting = true;
+        if (e.target.classList.contains('timeline-cell') || e.target.closest('.timeline-clip')) {
+            handleGridClick(e);
+        }
+    });
+    window.addEventListener('mouseup', () => isPainting = false);
+    grid.addEventListener('mousemove', (e) => {
+        if (isPainting && e.target.classList.contains('timeline-cell')) {
+            handleGridClick(e);
+        }
+    });
+}
+
+function handleGridClick(e) {
+    let cell = e.target.closest('.timeline-cell');
+    if (!cell && e.target.closest('.timeline-clip')) {
+        cell = e.target.closest('.timeline-clip').parentElement;
+    }
+    if (!cell) return;
+    
+    const trackIdx = parseInt(cell.dataset.track);
+    const bar = parseInt(cell.dataset.bar);
+
+    const existingClipIdx = ArrangementState.clips.findIndex(c => c.trackIdx === trackIdx && c.bar === bar);
+
+    if (ArrangementState.eraseMode) {
+        if (existingClipIdx !== -1) {
+            ArrangementState.clips.splice(existingClipIdx, 1);
+            renderArrangementClips();
+        }
+    } else {
+        if (existingClipIdx !== -1) {
+            ArrangementState.clips[existingClipIdx].patternId = ArrangementState.paintModePattern;
+        } else {
+            ArrangementState.clips.push({
+                id: 'clip-' + Date.now() + Math.random(),
+                trackIdx,
+                bar,
+                patternId: ArrangementState.paintModePattern
+            });
+        }
+        renderArrangementClips();
+    }
+}
+
+function renderArrangementClips() {
+    document.querySelectorAll('.timeline-clip').forEach(c => c.remove());
+
+    const grid = document.getElementById('timeline-grid');
+    if (!grid) return;
+
+    ArrangementState.clips.forEach(clip => {
+        const row = grid.children[clip.trackIdx];
+        if (!row) return;
+        const cell = row.children[clip.bar];
+        if (!cell) return;
+
+        const clipEl = document.createElement('div');
+        clipEl.className = 'timeline-clip';
+        clipEl.dataset.pattern = clip.patternId;
+        clipEl.dataset.id = clip.id;
+        
+        if (clip.patternId === 'VOICE') {
+            clipEl.innerHTML = '<i class="fas fa-microphone"></i> Voice';
+        } else {
+            clipEl.textContent = 'Pattern ' + clip.patternId;
+        }
+
+        const b = patternBanks[clip.patternId];
+        const hasData = (clip.patternId === 'VOICE' && AppState.voiceRecordingUrl) || (b && ((b.grid && b.grid.some(tr => tr.some(v=>v))) || (b.pianoNotes && b.pianoNotes.length > 0)));
+        
+        const indicator = document.createElement('div');
+        indicator.className = 'clip-indicator' + (hasData ? ' has-data' : '');
+        clipEl.appendChild(indicator);
+
+        // Individual clip interaction handled by grid delegation
+        cell.appendChild(clipEl);
+    });
+}
+
+function setupArrangementListeners() {
+    // Palette
+    document.querySelectorAll('#arrange-palette-btns .palette-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            ArrangementState.eraseMode = false;
+            ArrangementState.paintModePattern = btn.dataset.pattern;
+            document.querySelectorAll('.palette-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        });
+    });
+
+    const eraseBtn = document.getElementById('arrange-erase-btn');
+    if (eraseBtn) {
+        eraseBtn.addEventListener('click', () => {
+            ArrangementState.eraseMode = true;
+            document.querySelectorAll('.palette-btn').forEach(b => b.classList.remove('active'));
+            eraseBtn.classList.add('active');
+        });
+    }
+
+    const clearBtn = document.getElementById('arrange-clear-all-btn');
+    if (clearBtn) {
+        clearBtn.addEventListener('click', () => {
+            showConfirm('Clear entire arrangement?').then(confirmed => {
+                if (confirmed) {
+                    ArrangementState.clips = [];
+                    renderArrangementClips();
+                    showToast('Arrangement cleared', 'success');
+                }
+            });
+        });
+    }
+
+    // Transport
+    document.getElementById('song-play-btn')?.addEventListener('click', toggleSongPlayback);
+    document.getElementById('song-stop-btn')?.addEventListener('click', stopSongPlayback);
+    document.getElementById('song-rewind-btn')?.addEventListener('click', () => {
+        ArrangementState.currentBar = 0;
+        document.getElementById('song-bar-display').textContent = 1;
+        updatePlayheadPosition();
+        if (ArrangementState.isPlayingSong) {
+            Tone.Transport.seconds = 0;
+        }
+    });
+
+    // Length controls
+    document.getElementById('song-length-plus')?.addEventListener('click', () => {
+        ArrangementState.songLength = Math.min(128, ArrangementState.songLength + 4);
+        renderArrangementGrid();
+    });
+    document.getElementById('song-length-minus')?.addEventListener('click', () => {
+        ArrangementState.songLength = Math.max(4, ArrangementState.songLength - 4);
+        ArrangementState.clips = ArrangementState.clips.filter(c => c.bar < ArrangementState.songLength);
+        renderArrangementGrid();
+    });
+
+    // Export
+    document.getElementById('export-song-btn')?.addEventListener('click', exportSongToWAV);
+}
+
+async function toggleSongPlayback() {
+    if (!AppState.audioContextStarted) { 
+        await Tone.start(); 
+        initAudio(); 
+    }
+
+    ArrangementState.isPlayingSong = !ArrangementState.isPlayingSong;
+    const btn = document.getElementById('song-play-btn');
+
+    if (ArrangementState.isPlayingSong) {
+        if (AppState.isPlaying) togglePlayback();
+        if (AppState.isPianoPlaying) stopPianoPlayback();
+
+        Tone.Transport.stop();
+        Tone.Transport.seconds = 0;
+        
+        // Ensure current pattern is saved
+        patternBanks[currentPattern] = {
+            grid: JSON.parse(JSON.stringify(AppState.grid)),
+            pianoNotes: JSON.parse(JSON.stringify(AppState.pianoNotes || []))
+        };
+
+        if (songLoop) songLoop.dispose();
+        
+        let songStep = 0;
+        const totalSongSteps = ArrangementState.songLength * AppState.gridSteps;
+        
+        songLoop = new Tone.Loop((time) => {
+            if (songStep >= totalSongSteps) {
+                // End of arrangement reached
+                Tone.Draw.schedule(() => {
+                    stopSongPlayback();
+                }, time);
+                return;
+            }
+
+            const currentBar = Math.floor(songStep / AppState.gridSteps);
+            const stepInBar = songStep % AppState.gridSteps;
+
+            const activeClips = ArrangementState.clips.filter(c => c.bar === currentBar);
+            const anySoloed = ArrangementState.tracks.some(t => t.solo);
+
+            activeClips.forEach(clip => {
+                const track = ArrangementState.tracks[clip.trackIdx];
+                if (track.muted || (anySoloed && !track.solo)) return;
+
+                if (clip.patternId === 'VOICE') {
+                    if (stepInBar === 0 && arrangeVoiceBuffer && arrangeVoiceBuffer.loaded) {
+                        const voicePlayer = new Tone.Player(arrangeVoiceBuffer).toDestination();
+                        // Optional: route through FX chain if we had a dedicated voice fx node
+                        voicePlayer.start(time);
+                    }
+                    return;
+                }
+
+                const bank = patternBanks[clip.patternId];
+                if (!bank) return;
+
+                // Play drums/synth
+                if (bank.grid[0] && bank.grid[0][stepInBar]) synths.kick.triggerAttackRelease("C1", "8n", time);
+                if (bank.grid[1] && bank.grid[1][stepInBar]) synths.snare.triggerAttackRelease("8n", time);
+                if (bank.grid[2] && bank.grid[2][stepInBar]) synths.hihat.triggerAttackRelease("32n", time);
+                if (bank.grid[3] && bank.grid[3][stepInBar]) synths.clap.triggerAttackRelease("8n", time);
+                if (bank.grid[4] && bank.grid[4][stepInBar]) synths.bass.triggerAttackRelease("C2", "8n", time);
+                if (bank.grid[5] && bank.grid[5][stepInBar]) synths.synth.triggerAttackRelease(["C4", "E4", "G4"], "8n", time);
+                if (bank.grid[6] && bank.grid[6][stepInBar]) synths.fx.triggerAttackRelease("C5", "8n", time);
+
+                // Play piano
+                if (bank.pianoNotes) {
+                    bank.pianoNotes.forEach(note => {
+                        if (note.step === stepInBar && pianoSynth && pianoNotes[note.row]) {
+                            const durationSeconds = Tone.Time("8n").toSeconds() * note.duration;
+                            pianoSynth.triggerAttackRelease(pianoNotes[note.row].note, durationSeconds, time);
+                        }
+                    });
+                }
+            });
+
+            Tone.Draw.schedule(() => {
+                if (currentBar !== ArrangementState.currentBar) {
+                    ArrangementState.currentBar = currentBar;
+                    const bDisp = document.getElementById('song-bar-display');
+                    if(bDisp) bDisp.textContent = currentBar + 1;
+                }
+            }, time);
+
+            songStep++;
+        }, "8n");
+
+        Tone.Transport.start();
+        songLoop.start(0);
+
+        btn.classList.add('playing');
+        btn.innerHTML = '<i class="fas fa-pause"></i>';
+        document.getElementById('song-playhead').classList.add('active');
+        
+        animateSongPlayhead();
+
+    } else {
+        stopSongPlayback();
+    }
+}
+
+function stopSongPlayback() {
+    if (songLoop) {
+        songLoop.stop();
+        songLoop.dispose();
+        songLoop = null;
+    }
+    ArrangementState.isPlayingSong = false;
+    Tone.Transport.stop();
+    
+    if (songPlayAnimId) cancelAnimationFrame(songPlayAnimId);
+    
+    const btn = document.getElementById('song-play-btn');
+    if (btn) {
+        btn.classList.remove('playing');
+        btn.innerHTML = '<i class="fas fa-play"></i>';
+    }
+    const ph = document.getElementById('song-playhead');
+    if (ph) {
+        ph.classList.remove('active');
+        ph.style.left = '0px';
+    }
+    ArrangementState.currentBar = 0;
+    const barDisp = document.getElementById('song-bar-display');
+    if (barDisp) barDisp.textContent = 1;
+}
+
+function updatePlayheadPosition() {
+    const playhead = document.getElementById('song-playhead');
+    if (!playhead) return;
+    playhead.style.left = (ArrangementState.currentBar * 80) + 'px';
+}
+
+function animateSongPlayhead() {
+    if (!ArrangementState.isPlayingSong) return;
+    
+    const playhead = document.getElementById('song-playhead');
+    const cellWidth = 80;
+    const stepDur = 60 / AppState.bpm / 2; // seconds per 8th note
+    const currentStepFloat = Tone.Transport.seconds / stepDur;
+    const currentBarFloat = currentStepFloat / AppState.gridSteps;
+    
+    if (playhead) {
+        const pos = currentBarFloat * cellWidth;
+        playhead.style.left = pos + 'px';
+        
+        // Auto-scroll timeline
+        const scrollContainer = document.getElementById('timeline-grid-scroll');
+        if (scrollContainer) {
+            const viewWidth = scrollContainer.clientWidth;
+            if (pos > scrollContainer.scrollLeft + viewWidth - 100) {
+                scrollContainer.scrollLeft = pos - viewWidth + 100;
+            } else if (pos < scrollContainer.scrollLeft) {
+                scrollContainer.scrollLeft = pos;
+            }
+        }
+    }
+    
+    songPlayAnimId = requestAnimationFrame(animateSongPlayhead);
+}
+
+// REAL-TIME EXPORT 
+async function exportSongToWAV() {
+    if (isExporting) return;
+    if (ArrangementState.clips.length === 0) {
+        showToast('Arrangement is empty!', 'error');
+        return;
+    }
+
+    if (!AppState.audioContextStarted) { Tone.start(); initAudio(); }
+    
+    isExporting = true;
+    const exportBtn = document.getElementById('export-song-btn');
+    if (exportBtn) exportBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Rendering...';
+    
+    // Create UI overlay
+    const overlay = document.createElement('div');
+    overlay.className = 'export-progress-overlay';
+    overlay.innerHTML = `
+        <div class="export-progress-card">
+            <h3>Exporting Song</h3>
+            <div class="export-progress-bar"><div class="export-progress-fill" id="export-progress-fill"></div></div>
+            <div class="export-progress-text" id="export-progress-text">Rendering audio in real-time...</div>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+
+    // Stop current playback
+    stopSongPlayback();
+    if (AppState.isPlaying) togglePlayback();
+    if (AppState.isPianoPlaying) stopPianoPlayback();
+    
+    ArrangementState.currentBar = 0;
+    Tone.Transport.seconds = 0;
+    
+    if (!songRecorder) {
+        songRecorder = new Tone.Recorder();
+        Tone.Destination.connect(songRecorder);
+    }
+    
+    await songRecorder.start();
+    
+    const barDuration = (60 / AppState.bpm) * (AppState.gridSteps / 2); // Corrected bar duration in seconds
+    const totalBars = Math.max(...ArrangementState.clips.map(c => c.bar)) + 1;
+    const exportBars = totalBars + 1; // +1 bar for tails
+    const totalTimeMs = exportBars * barDuration * 1000;
+    
+    const startTime = Date.now();
+    toggleSongPlayback(); // Start song from beginning
+    
+    // Progress animation
+    const progressFill = document.getElementById('export-progress-fill');
+    const progressAnim = setInterval(() => {
+        const elapsed = Date.now() - startTime;
+        const pct = Math.min(100, (elapsed / totalTimeMs) * 100);
+        if (progressFill) progressFill.style.width = pct + '%';
+    }, 100);
+    
+    setTimeout(async () => {
+        clearInterval(progressAnim);
+        stopSongPlayback();
+        
+        try {
+            const recording = await songRecorder.stop();
+            const url = URL.createObjectURL(recording);
+            const anchor = document.createElement("a");
+            anchor.download = (AppState.projectName || "LoopFlow_Song") + ".webm";
+            anchor.href = url;
+            anchor.click();
+            showToast('Export complete!', 'success');
+        } catch (e) {
+            console.error('Export failed:', e);
+            showToast('Export failed', 'error');
+        }
+        
+        overlay.remove();
+        if (exportBtn) exportBtn.innerHTML = '<i class="fas fa-download"></i> Export';
+        isExporting = false;
+    }, totalTimeMs);
+}
+
+
+// ============================================
 // INITIALIZE
 // ============================================
 document.addEventListener('DOMContentLoaded', () => {
@@ -2993,6 +3947,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initEffects();
     initMetronome();
     initPatternBanks();
+    initArrangement(); // NEW: Init DAW Timeline
     initUndoRedo();
     initTrackRandomize();
     initDJTools();
