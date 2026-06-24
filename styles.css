@@ -51,11 +51,14 @@ body {
     height: 100%;
     overflow: hidden;
     font-family: 'Outfit', 'Inter', system-ui, sans-serif;
-    background: var(--bg);
-    background-image:
-        radial-gradient(at 100% 0%, rgba(251, 191, 36, 0.1) 0px, transparent 50%),
-        radial-gradient(at 0% 100%, rgba(244, 63, 94, 0.05) 0px, transparent 50%),
-        radial-gradient(at 0% 0%, rgba(16, 185, 129, 0.05) 0px, transparent 50%);
+    background-color: #0F766E;
+    background-image: 
+        repeating-radial-gradient(circle at 50% 50%, transparent 0, transparent 35px, rgba(255, 234, 0, 0.3) 35px, rgba(255, 234, 0, 0.3) 70px),
+        radial-gradient(circle at 15% 15%, #FFEA00 0%, transparent 60%),
+        radial-gradient(circle at 85% 15%, #14B8A6 0%, transparent 60%),
+        radial-gradient(circle at 85% 85%, #FBBF24 0%, transparent 60%),
+        radial-gradient(circle at 15% 85%, #2DD4BF 0%, transparent 60%);
+    background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%;
     background-attachment: fixed;
     color: var(--text-dark);
     -webkit-font-smoothing: antialiased;
@@ -75,7 +78,14 @@ body {
     left: 0;
     right: 0;
     bottom: 0;
-    background: radial-gradient(circle at center, #FFD666 0%, #FBBF24 100%);
+    background-color: #0F766E;
+    background-image: 
+        repeating-radial-gradient(circle at 50% 50%, transparent 0, transparent 35px, rgba(255, 234, 0, 0.3) 35px, rgba(255, 234, 0, 0.3) 70px),
+        radial-gradient(circle at 15% 15%, #FFEA00 0%, transparent 60%),
+        radial-gradient(circle at 85% 15%, #14B8A6 0%, transparent 60%),
+        radial-gradient(circle at 85% 85%, #FBBF24 0%, transparent 60%),
+        radial-gradient(circle at 15% 85%, #2DD4BF 0%, transparent 60%);
+    background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -2602,10 +2612,15 @@ body {
 }
 
 body {
-    background:
-        linear-gradient(135deg, rgba(37, 99, 235, 0.08), transparent 34%),
-        linear-gradient(315deg, rgba(5, 150, 105, 0.08), transparent 32%),
-        #f6f8fc;
+    background-color: #0F766E;
+    background-image: 
+        repeating-radial-gradient(circle at 50% 50%, transparent 0, transparent 35px, rgba(255, 234, 0, 0.3) 35px, rgba(255, 234, 0, 0.3) 70px),
+        radial-gradient(circle at 15% 15%, #FFEA00 0%, transparent 60%),
+        radial-gradient(circle at 85% 15%, #14B8A6 0%, transparent 60%),
+        radial-gradient(circle at 85% 85%, #FBBF24 0%, transparent 60%),
+        radial-gradient(circle at 15% 85%, #2DD4BF 0%, transparent 60%);
+    background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%;
+    background-attachment: fixed;
     color: var(--ink);
 }
 
@@ -3124,10 +3139,14 @@ select:focus-visible {
 }
 
 .onboarding-overlay {
-    background:
-        linear-gradient(135deg, rgba(37, 99, 235, 0.16), transparent 38%),
-        linear-gradient(315deg, rgba(5, 150, 105, 0.16), transparent 38%),
-        #f8fafc;
+    background-color: #0F766E;
+    background-image: 
+        repeating-radial-gradient(circle at 50% 50%, transparent 0, transparent 35px, rgba(255, 234, 0, 0.3) 35px, rgba(255, 234, 0, 0.3) 70px),
+        radial-gradient(circle at 15% 15%, #FFEA00 0%, transparent 60%),
+        radial-gradient(circle at 85% 15%, #14B8A6 0%, transparent 60%),
+        radial-gradient(circle at 85% 85%, #FBBF24 0%, transparent 60%),
+        radial-gradient(circle at 15% 85%, #2DD4BF 0%, transparent 60%);
+    background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%;
 }
 
 .onboarding-content h1 {
@@ -3274,10 +3293,15 @@ select:focus-visible {
 }
 
 body {
-    background:
-        linear-gradient(145deg, rgba(250, 204, 21, 0.28) 0%, rgba(255, 250, 240, 0.2) 38%),
-        linear-gradient(315deg, rgba(20, 184, 166, 0.2) 0%, rgba(236, 254, 255, 0) 34%),
-        var(--page);
+    background-color: #0F766E;
+    background-image: 
+        repeating-radial-gradient(circle at 50% 50%, transparent 0, transparent 35px, rgba(255, 234, 0, 0.3) 35px, rgba(255, 234, 0, 0.3) 70px),
+        radial-gradient(circle at 15% 15%, #FFEA00 0%, transparent 60%),
+        radial-gradient(circle at 85% 15%, #14B8A6 0%, transparent 60%),
+        radial-gradient(circle at 85% 85%, #FBBF24 0%, transparent 60%),
+        radial-gradient(circle at 15% 85%, #2DD4BF 0%, transparent 60%);
+    background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%;
+    background-attachment: fixed;
 }
 
 .app-container {
@@ -3583,10 +3607,14 @@ body {
 }
 
 .onboarding-overlay {
-    background:
-        linear-gradient(145deg, rgba(250, 204, 21, 0.42), rgba(255, 250, 240, 0.62) 43%),
-        linear-gradient(315deg, rgba(20, 184, 166, 0.28), rgba(236, 254, 255, 0) 42%),
-        #fffaf0;
+    background-color: #0F766E;
+    background-image: 
+        repeating-radial-gradient(circle at 50% 50%, transparent 0, transparent 35px, rgba(255, 234, 0, 0.3) 35px, rgba(255, 234, 0, 0.3) 70px),
+        radial-gradient(circle at 15% 15%, #FFEA00 0%, transparent 60%),
+        radial-gradient(circle at 85% 15%, #14B8A6 0%, transparent 60%),
+        radial-gradient(circle at 85% 85%, #FBBF24 0%, transparent 60%),
+        radial-gradient(circle at 15% 85%, #2DD4BF 0%, transparent 60%);
+    background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%;
 }
 
 .logo-pulse {
@@ -3647,11 +3675,15 @@ body {
 
 html,
 body {
-    background:
-        linear-gradient(90deg, rgba(244, 196, 48, 0.22) 0 80px, transparent 80px),
-        repeating-linear-gradient(0deg, rgba(38, 33, 20, 0.035) 0 1px, transparent 1px 32px),
-        repeating-linear-gradient(90deg, rgba(38, 33, 20, 0.025) 0 1px, transparent 1px 32px),
-        linear-gradient(135deg, #fff8df 0%, #fffdf6 45%, #e9fffb 100%);
+    background-color: #0F766E;
+    background-image: 
+        repeating-radial-gradient(circle at 50% 50%, transparent 0, transparent 35px, rgba(255, 234, 0, 0.3) 35px, rgba(255, 234, 0, 0.3) 70px),
+        radial-gradient(circle at 15% 15%, #FFEA00 0%, transparent 60%),
+        radial-gradient(circle at 85% 15%, #14B8A6 0%, transparent 60%),
+        radial-gradient(circle at 85% 85%, #FBBF24 0%, transparent 60%),
+        radial-gradient(circle at 15% 85%, #2DD4BF 0%, transparent 60%);
+    background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%;
+    background-attachment: fixed;
 }
 
 .app-container {
@@ -4161,10 +4193,14 @@ body {
 }
 
 .onboarding-overlay {
-    background:
-        linear-gradient(90deg, rgba(244, 196, 48, 0.36) 0 80px, transparent 80px),
-        repeating-linear-gradient(0deg, rgba(38, 33, 20, 0.04) 0 1px, transparent 1px 34px),
-        linear-gradient(135deg, #fff8df 0%, #fffdf6 54%, #dcfff9 100%);
+    background-color: #0F766E;
+    background-image: 
+        repeating-radial-gradient(circle at 50% 50%, transparent 0, transparent 35px, rgba(255, 234, 0, 0.3) 35px, rgba(255, 234, 0, 0.3) 70px),
+        radial-gradient(circle at 15% 15%, #FFEA00 0%, transparent 60%),
+        radial-gradient(circle at 85% 15%, #14B8A6 0%, transparent 60%),
+        radial-gradient(circle at 85% 85%, #FBBF24 0%, transparent 60%),
+        radial-gradient(circle at 15% 85%, #2DD4BF 0%, transparent 60%);
+    background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%;
 }
 
 .onboarding-content {
@@ -4230,10 +4266,15 @@ body {
 @media (max-width: 767px) {
     html,
     body {
-        background:
-            linear-gradient(90deg, rgba(244, 196, 48, 0.18) 0 22px, transparent 22px),
-            repeating-linear-gradient(0deg, rgba(38, 33, 20, 0.035) 0 1px, transparent 1px 30px),
-            linear-gradient(135deg, #fff8df 0%, #fffdf6 52%, #e9fffb 100%);
+        background-color: #0F766E;
+    background-image: 
+        repeating-radial-gradient(circle at 50% 50%, transparent 0, transparent 35px, rgba(255, 234, 0, 0.3) 35px, rgba(255, 234, 0, 0.3) 70px),
+        radial-gradient(circle at 15% 15%, #FFEA00 0%, transparent 60%),
+        radial-gradient(circle at 85% 15%, #14B8A6 0%, transparent 60%),
+        radial-gradient(circle at 85% 85%, #FBBF24 0%, transparent 60%),
+        radial-gradient(circle at 15% 85%, #2DD4BF 0%, transparent 60%);
+    background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%;
+        background-attachment: fixed;
     }
 
     .studio-header {
