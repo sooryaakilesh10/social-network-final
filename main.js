@@ -350,7 +350,7 @@ function init() {
 function generateGrid() {
     const grid = document.getElementById('sequencer-grid');
     grid.innerHTML = '';
-    grid.style.gridTemplateColumns = `repeat(${AppState.gridSteps}, minmax(34px, 1fr))`;
+    grid.style.gridTemplateColumns = `repeat(${AppState.gridSteps}, 36px)`;
 
     for (let track = 0; track < 8; track++) {
         for (let step = 0; step < AppState.gridSteps; step++) {
@@ -422,7 +422,12 @@ function regenerateStepIndicators() {
     if (!container) return;
 
     container.innerHTML = '';
-    container.style.gridTemplateColumns = `60px repeat(${AppState.gridSteps}, minmax(34px, 1fr))`;
+    container.style.gridTemplateColumns = `60px repeat(${AppState.gridSteps}, 36px)`;
+    container.style.setProperty('--steps', AppState.gridSteps);
+
+    const spacer = document.createElement('div');
+    spacer.className = 'step-spacer';
+    container.appendChild(spacer);
 
     for (let i = 0; i < AppState.gridSteps; i++) {
         const indicator = document.createElement('div');
@@ -2289,7 +2294,81 @@ function applyAllTrackVolumes() {
 // ============================================
 let fxNodes = {};
 
+function getCurrentFxContext() {
+    if (ArrangementState && ArrangementState.selectedClipId) {
+        const clip = ArrangementState.clips.find(c => c.id === ArrangementState.selectedClipId);
+        if (clip) {
+            if (!clip.fxSettings) {
+                clip.fxSettings = JSON.parse(JSON.stringify(AppState.fxSettings));
+                clip.fxActive = JSON.parse(JSON.stringify(AppState.fxActive));
+            }
+            return { settings: clip.fxSettings, active: clip.fxActive, isGlobal: false };
+        }
+    }
+    return { settings: AppState.fxSettings, active: AppState.fxActive, isGlobal: true };
+}
+
+function updateFxUI() {
+    const ctx = getCurrentFxContext();
+    const badge = document.getElementById('fx-context-badge');
+    if (badge) {
+        if (ctx.isGlobal) {
+            badge.textContent = 'Global FX';
+            badge.classList.add('global');
+        } else {
+            badge.textContent = 'Tile FX (Selected)';
+            badge.classList.remove('global');
+        }
+    }
+
+    const fxTypes = ['reverb', 'delay', 'distortion', 'chorus'];
+    fxTypes.forEach(fx => {
+        const toggle = document.getElementById(`toggle-${fx}`);
+        const card = document.getElementById(`fx-card-${fx}`);
+        if (toggle && card) {
+            toggle.checked = !!ctx.active[fx];
+            card.classList.toggle('active', !!ctx.active[fx]);
+        }
+    });
+
+    const setVal = (id, val, textSuffix = '') => {
+        const el = document.getElementById(id);
+        const textEl = document.getElementById(id + '-val');
+        if (el) el.value = val;
+        if (textEl) textEl.textContent = val + textSuffix;
+    };
+
+    setVal('reverb-decay', ctx.settings.reverb.decay, 's');
+    setVal('reverb-mix', ctx.settings.reverb.mix, '%');
+    
+    const delayTime = document.getElementById('delay-time');
+    if (delayTime) delayTime.value = ctx.settings.delay.time;
+    const delayTimeVal = document.getElementById('delay-time-val');
+    if (delayTimeVal) delayTimeVal.textContent = ctx.settings.delay.time;
+
+    setVal('delay-feedback', ctx.settings.delay.feedback, '%');
+    setVal('delay-mix', ctx.settings.delay.mix, '%');
+    
+    setVal('distortion-drive', ctx.settings.distortion.drive, '%');
+    setVal('distortion-mix', ctx.settings.distortion.mix, '%');
+    
+    setVal('chorus-rate', ctx.settings.chorus.rate, 'Hz');
+    setVal('chorus-depth', Math.round(ctx.settings.chorus.depth * 100), '%');
+    setVal('chorus-mix', ctx.settings.chorus.mix, '%');
+}
+
 function initEffects() {
+    const badge = document.getElementById('fx-context-badge');
+    if (badge) {
+        badge.addEventListener('click', () => {
+            if (ArrangementState.selectedClipId) {
+                ArrangementState.selectedClipId = null;
+                renderArrangementClips();
+                updateFxUI();
+            }
+        });
+    }
+
     // 1. Setup toggle listeners
     const fxTypes = ['reverb', 'delay', 'distortion', 'chorus'];
     fxTypes.forEach(fx => {
@@ -2301,9 +2380,10 @@ function initEffects() {
                     Tone.start();
                     initAudio();
                 }
-                AppState.fxActive[fx] = e.target.checked;
-                card.classList.toggle('active', AppState.fxActive[fx]);
-                rebuildEffectsChain();
+                const ctx = getCurrentFxContext();
+                ctx.active[fx] = e.target.checked;
+                card.classList.toggle('active', ctx.active[fx]);
+                if (ctx.isGlobal || !ArrangementState.isPlayingSong) rebuildEffectsChain();
             });
         }
     });
@@ -2317,8 +2397,9 @@ function initEffects() {
         });
         reverbDecay.addEventListener('change', (e) => {
             const val = parseFloat(e.target.value);
-            AppState.fxSettings.reverb.decay = val;
-            if (AppState.audioContextStarted && fxNodes.reverb) {
+            const ctx = getCurrentFxContext();
+            ctx.settings.reverb.decay = val;
+            if (AppState.audioContextStarted && fxNodes.reverb && (ctx.isGlobal || !ArrangementState.isPlayingSong)) {
                 fxNodes.reverb.decay = val;
             }
         });
@@ -2330,8 +2411,9 @@ function initEffects() {
         reverbMix.addEventListener('input', (e) => {
             const val = parseInt(e.target.value);
             reverbMixVal.textContent = val + '%';
-            AppState.fxSettings.reverb.mix = val;
-            if (AppState.audioContextStarted && fxNodes.reverb) {
+            const ctx = getCurrentFxContext();
+            ctx.settings.reverb.mix = val;
+            if (AppState.audioContextStarted && fxNodes.reverb && (ctx.isGlobal || !ArrangementState.isPlayingSong)) {
                 fxNodes.reverb.wet.value = val / 100;
             }
         });
@@ -2344,8 +2426,9 @@ function initEffects() {
         delayTime.addEventListener('change', (e) => {
             const val = e.target.value;
             delayTimeVal.textContent = val;
-            AppState.fxSettings.delay.time = val;
-            if (AppState.audioContextStarted && fxNodes.delay) {
+            const ctx = getCurrentFxContext();
+            ctx.settings.delay.time = val;
+            if (AppState.audioContextStarted && fxNodes.delay && (ctx.isGlobal || !ArrangementState.isPlayingSong)) {
                 fxNodes.delay.delayTime.value = val;
             }
         });
@@ -2357,8 +2440,9 @@ function initEffects() {
         delayFeedback.addEventListener('input', (e) => {
             const val = parseInt(e.target.value);
             delayFeedbackVal.textContent = val + '%';
-            AppState.fxSettings.delay.feedback = val;
-            if (AppState.audioContextStarted && fxNodes.delay) {
+            const ctx = getCurrentFxContext();
+            ctx.settings.delay.feedback = val;
+            if (AppState.audioContextStarted && fxNodes.delay && (ctx.isGlobal || !ArrangementState.isPlayingSong)) {
                 fxNodes.delay.feedback.value = val / 100;
             }
         });
@@ -2370,8 +2454,9 @@ function initEffects() {
         delayMix.addEventListener('input', (e) => {
             const val = parseInt(e.target.value);
             delayMixVal.textContent = val + '%';
-            AppState.fxSettings.delay.mix = val;
-            if (AppState.audioContextStarted && fxNodes.delay) {
+            const ctx = getCurrentFxContext();
+            ctx.settings.delay.mix = val;
+            if (AppState.audioContextStarted && fxNodes.delay && (ctx.isGlobal || !ArrangementState.isPlayingSong)) {
                 fxNodes.delay.wet.value = val / 100;
             }
         });
@@ -2384,8 +2469,9 @@ function initEffects() {
         distDrive.addEventListener('input', (e) => {
             const val = parseInt(e.target.value);
             distDriveVal.textContent = val + '%';
-            AppState.fxSettings.distortion.drive = val;
-            if (AppState.audioContextStarted && fxNodes.distortion) {
+            const ctx = getCurrentFxContext();
+            ctx.settings.distortion.drive = val;
+            if (AppState.audioContextStarted && fxNodes.distortion && (ctx.isGlobal || !ArrangementState.isPlayingSong)) {
                 fxNodes.distortion.distortion = val / 100;
             }
         });
@@ -2397,8 +2483,9 @@ function initEffects() {
         distMix.addEventListener('input', (e) => {
             const val = parseInt(e.target.value);
             distMixVal.textContent = val + '%';
-            AppState.fxSettings.distortion.mix = val;
-            if (AppState.audioContextStarted && fxNodes.distortion) {
+            const ctx = getCurrentFxContext();
+            ctx.settings.distortion.mix = val;
+            if (AppState.audioContextStarted && fxNodes.distortion && (ctx.isGlobal || !ArrangementState.isPlayingSong)) {
                 fxNodes.distortion.wet.value = val / 100;
             }
         });
@@ -2411,8 +2498,9 @@ function initEffects() {
         chorusRate.addEventListener('input', (e) => {
             const val = parseFloat(e.target.value);
             chorusRateVal.textContent = val + 'Hz';
-            AppState.fxSettings.chorus.rate = val;
-            if (AppState.audioContextStarted && fxNodes.chorus) {
+            const ctx = getCurrentFxContext();
+            ctx.settings.chorus.rate = val;
+            if (AppState.audioContextStarted && fxNodes.chorus && (ctx.isGlobal || !ArrangementState.isPlayingSong)) {
                 fxNodes.chorus.frequency.value = val;
             }
         });
@@ -2424,8 +2512,9 @@ function initEffects() {
         chorusDepth.addEventListener('input', (e) => {
             const val = parseInt(e.target.value);
             chorusDepthVal.textContent = val + '%';
-            AppState.fxSettings.chorus.depth = val / 100;
-            if (AppState.audioContextStarted && fxNodes.chorus) {
+            const ctx = getCurrentFxContext();
+            ctx.settings.chorus.depth = val / 100;
+            if (AppState.audioContextStarted && fxNodes.chorus && (ctx.isGlobal || !ArrangementState.isPlayingSong)) {
                 fxNodes.chorus.depth = val / 100;
             }
         });
@@ -2437,8 +2526,9 @@ function initEffects() {
         chorusMix.addEventListener('input', (e) => {
             const val = parseInt(e.target.value);
             chorusMixVal.textContent = val + '%';
-            AppState.fxSettings.chorus.mix = val;
-            if (AppState.audioContextStarted && fxNodes.chorus) {
+            const ctx = getCurrentFxContext();
+            ctx.settings.chorus.mix = val;
+            if (AppState.audioContextStarted && fxNodes.chorus && (ctx.isGlobal || !ArrangementState.isPlayingSong)) {
                 fxNodes.chorus.wet.value = val / 100;
             }
         });
@@ -2451,25 +2541,42 @@ function ensureFxNodes() {
     fxNodes.reverb = new Tone.Reverb({
         decay: AppState.fxSettings.reverb.decay,
         wet: AppState.fxSettings.reverb.mix / 100
-    }).toDestination();
+    });
 
     fxNodes.delay = new Tone.FeedbackDelay({
         delayTime: AppState.fxSettings.delay.time,
         feedback: AppState.fxSettings.delay.feedback / 100,
         wet: AppState.fxSettings.delay.mix / 100
-    }).toDestination();
+    });
 
     fxNodes.distortion = new Tone.Distortion({
         distortion: AppState.fxSettings.distortion.drive / 100,
         wet: AppState.fxSettings.distortion.mix / 100
-    }).toDestination();
+    });
 
     fxNodes.chorus = new Tone.Chorus({
         frequency: AppState.fxSettings.chorus.rate,
         delayTime: 3.5,
         depth: AppState.fxSettings.chorus.depth / 100,
         wet: AppState.fxSettings.chorus.mix / 100
-    }).toDestination();
+    });
+}
+
+function applyFxStateToNodes(settings, active, time) {
+    if (!fxNodes.reverb) return;
+    
+    fxNodes.distortion.wet.setValueAtTime(active.distortion ? settings.distortion.mix / 100 : 0, time);
+    fxNodes.distortion.distortion = settings.distortion.drive / 100;
+    
+    fxNodes.chorus.wet.setValueAtTime(active.chorus ? settings.chorus.mix / 100 : 0, time);
+    fxNodes.chorus.depth = settings.chorus.depth / 100;
+    fxNodes.chorus.frequency.setValueAtTime(settings.chorus.rate, time);
+
+    fxNodes.delay.wet.setValueAtTime(active.delay ? settings.delay.mix / 100 : 0, time);
+    fxNodes.delay.feedback.setValueAtTime(settings.delay.feedback / 100, time);
+
+    fxNodes.reverb.wet.setValueAtTime(active.reverb ? settings.reverb.mix / 100 : 0, time);
+    fxNodes.reverb.decay = settings.reverb.decay;
 }
 
 function rebuildEffectsChain() {
@@ -2477,22 +2584,17 @@ function rebuildEffectsChain() {
     ensureFxNodes();
 
     const synthKeys = ['kick', 'snare', 'hihat', 'clap', 'bass', 'synth', 'fx', 'vocal'];
+    const chainNodes = [fxNodes.distortion, fxNodes.chorus, fxNodes.delay, fxNodes.reverb];
+
     synthKeys.forEach(key => {
         const s = synths[key];
         if (!s) return;
         s.disconnect();
-
-        // Build chain of active effects
-        const activeChain = Object.keys(AppState.fxActive).filter(k => AppState.fxActive[k]).map(k => fxNodes[k]);
-
-        if (activeChain.length > 0) {
-            s.chain(...activeChain);
-        } else {
-            s.toDestination();
-        }
+        s.chain(...chainNodes, Tone.Destination);
     });
 
-    showToast('Effects updated', 'success');
+    applyFxStateToNodes(AppState.fxSettings, AppState.fxActive, Tone.now());
+    showToast('Effects routing updated', 'success');
 }
 
 
@@ -3493,7 +3595,8 @@ const ArrangementState = {
     isPlayingSong: false,
     currentBar: 0,
     paintModePattern: 'A',
-    eraseMode: false
+    eraseMode: false,
+    selectedClipId: null
 };
 
 let songLoop = null;
@@ -3602,21 +3705,30 @@ function handleGridClick(e) {
 
     if (ArrangementState.eraseMode) {
         if (existingClipIdx !== -1) {
-            ArrangementState.clips.splice(existingClipIdx, 1);
+            const removedClip = ArrangementState.clips.splice(existingClipIdx, 1)[0];
+            if (ArrangementState.selectedClipId === removedClip.id) {
+                ArrangementState.selectedClipId = null;
+            }
             renderArrangementClips();
+            if (typeof updateFxUI === 'function') updateFxUI();
         }
     } else {
+        let clipId;
         if (existingClipIdx !== -1) {
             ArrangementState.clips[existingClipIdx].patternId = ArrangementState.paintModePattern;
+            clipId = ArrangementState.clips[existingClipIdx].id;
         } else {
+            clipId = 'clip-' + Date.now() + Math.random();
             ArrangementState.clips.push({
-                id: 'clip-' + Date.now() + Math.random(),
+                id: clipId,
                 trackIdx,
                 bar,
                 patternId: ArrangementState.paintModePattern
             });
         }
+        ArrangementState.selectedClipId = clipId;
         renderArrangementClips();
+        if (typeof updateFxUI === 'function') updateFxUI();
     }
 }
 
@@ -3636,6 +3748,9 @@ function renderArrangementClips() {
         clipEl.className = 'timeline-clip';
         clipEl.dataset.pattern = clip.patternId;
         clipEl.dataset.id = clip.id;
+        if (clip.id === ArrangementState.selectedClipId) {
+            clipEl.classList.add('selected');
+        }
         
         if (clip.patternId.startsWith('VOICE_')) {
             clipEl.innerHTML = '<i class="fas fa-microphone"></i> Voice';
@@ -3776,6 +3891,17 @@ async function toggleSongPlayback() {
 
             const activeClips = ArrangementState.clips.filter(c => c.bar === currentBar);
             const anySoloed = ArrangementState.tracks.some(t => t.solo);
+
+            if (stepInBar === 0) {
+                let fxToApply = { settings: AppState.fxSettings, active: AppState.fxActive };
+                for (let c of activeClips) {
+                    if (c.fxSettings) {
+                        fxToApply = { settings: c.fxSettings, active: c.fxActive };
+                        break; // Just use the first clip with custom FX we find in this bar
+                    }
+                }
+                applyFxStateToNodes(fxToApply.settings, fxToApply.active, time);
+            }
 
             activeClips.forEach(clip => {
                 const track = ArrangementState.tracks[clip.trackIdx];

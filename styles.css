@@ -497,21 +497,41 @@ body {
 /* Sequencer */
 .sequencer-container {
     display: flex;
-    gap: 0.5rem;
+    gap: 0.4rem;
     margin-bottom: 0.5rem;
     background: var(--bg-card);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    padding: 1rem;
-    border-radius: 20px;
+    padding: 0.6rem 0.75rem;
+    border-radius: 16px;
     border: 1px solid var(--glass-border);
     box-shadow: var(--shadow);
 }
 
 .track-labels {
     display: grid;
-    grid-template-rows: repeat(8, 1fr);
-    gap: 0.42rem;
+    grid-template-rows: repeat(8, 36px);
+    gap: 0.4rem;
+    position: sticky;
+    left: 0;
+    z-index: 10;
+    background: var(--bg);
+}
+
+.sequencer-scroll-wrapper {
+    overflow-x: auto;
+    /* Hide scrollbar for a cleaner look, but keep functionality */
+    scrollbar-width: none; /* Firefox */
+}
+.sequencer-scroll-wrapper::-webkit-scrollbar {
+    display: none; /* Chrome/Safari */
+}
+
+.step-spacer {
+    position: sticky;
+    left: 0;
+    z-index: 10;
+    background: var(--bg); /* To cover scrolled text */
 }
 
 .track-label {
@@ -648,18 +668,28 @@ body {
     grid-template-columns: repeat(8, 1fr);
     gap: 0.4rem;
     flex: 1;
+    min-width: max-content;
 }
 
 .grid-cell {
+    width: 36px;
+    height: 36px;
     aspect-ratio: 1;
     background: #FFF;
-    border-radius: 10px;
+    border-radius: 6px;
     cursor: pointer;
     transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-    border: 1px solid rgba(0,0,0,0.04);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+    border: 1px solid rgba(0,0,0,0.08);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.02);
     position: relative;
     overflow: hidden;
+}
+
+/* Beat grouping: highlight the first step of each 4-step beat */
+.grid-cell[data-step="0"], .grid-cell[data-step="4"], .grid-cell[data-step="8"], .grid-cell[data-step="12"],
+.grid-cell[data-step="16"], .grid-cell[data-step="20"], .grid-cell[data-step="24"], .grid-cell[data-step="28"] {
+    background: #F3F4F6;
+    border-left: 2px solid rgba(0,0,0,0.1);
 }
 
 .grid-cell::after {
@@ -699,13 +729,14 @@ body {
     display: grid;
     grid-template-columns: 60px repeat(8, 1fr);
     gap: 0.4rem;
-    margin-bottom: 1rem;
-    padding: 0 1rem;
+    margin-bottom: 0.75rem;
+    padding: 0 0.75rem;
+    min-width: max-content;
 }
 
 .step-indicator {
     text-align: center;
-    font-size: 0.9rem;
+    font-size: 0.75rem;
     font-weight: 700;
     color: var(--text-teal);
     opacity: 0.7;
@@ -2383,10 +2414,23 @@ body {
     display: none; /* Only visible when selected */
     align-items: center;
     justify-content: center;
+    font-size: 0.65rem;
+    font-weight: 700;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    transition: all 0.2s;
     cursor: pointer;
     z-index: 6;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
     line-height: 1;
+}
+
+.timeline-clip.selected {
+    box-shadow: 0 0 0 2px var(--pool), 0 4px 10px rgba(0,0,0,0.2);
+    transform: translateY(-1px);
+    z-index: 2;
+}
+
+.timeline-clip:hover {
+    filter: brightness(1.1);
 }
 
 .piano-note-block.selected .note-delete-btn {
@@ -2821,7 +2865,6 @@ select:focus-visible {
 }
 
 .grid-cell {
-    min-width: 34px;
     background: #edf2f7;
     border: 1px solid #dbe3ee;
     border-radius: var(--radius-card);
@@ -3136,16 +3179,7 @@ select:focus-visible {
     }
 }
 
-@media (min-width: 1024px) {
-    #create-tab.active {
-        max-width: 920px;
-        margin: 0 auto;
-    }
-
-    .main-nav {
-        width: min(560px, calc(100% - 36px));
-    }
-}
+/* Old 1024px constraints removed — handled by desktop overhaul at end of file */
 
 @media (max-width: 560px) {
     .studio-header {
@@ -4185,32 +4219,7 @@ body {
     }
 
     #create-tab.active {
-        display: grid;
-        grid-template-columns: minmax(0, 1.45fr) minmax(280px, 0.72fr);
-        align-items: start;
-        gap: 1rem;
-    }
-
-    #create-tab .studio-header,
-    #create-tab .genre-selector,
-    #create-tab .sequencer-container,
-    #create-tab .step-indicators,
-    #create-tab .bpm-control,
-    #create-tab .btn-share {
-        grid-column: 1;
-    }
-
-    #create-tab .recorder-section,
-    #create-tab .piano-section {
-        grid-column: 2;
-    }
-
-    #create-tab .recorder-section {
-        grid-row: 1 / span 4;
-    }
-
-    #create-tab .piano-section {
-        grid-row: 5 / span 4;
+        display: block;
     }
 
     .piano-keys {
@@ -4248,38 +4257,6 @@ body {
         max-width: 760px;
     }
 
-    #create-tab .studio-header {
-        grid-area: auto;
-    }
-
-    #create-tab .genre-selector {
-        grid-area: auto;
-    }
-
-    #create-tab .sequencer-container {
-        grid-area: auto;
-    }
-
-    #create-tab .step-indicators {
-        grid-area: auto;
-    }
-
-    #create-tab .bpm-control {
-        grid-area: auto;
-    }
-
-    #create-tab .btn-share {
-        grid-area: auto;
-    }
-
-    #create-tab .recorder-section {
-        grid-area: auto;
-    }
-
-    #create-tab .piano-section {
-        grid-area: auto;
-    }
-
     #create-tab .studio-header,
     #create-tab .genre-selector,
     #create-tab .sequencer-container,
@@ -4288,44 +4265,13 @@ body {
     #create-tab .btn-share,
     #create-tab .recorder-section,
     #create-tab .piano-section {
+        grid-area: auto;
         grid-column: auto;
         grid-row: auto;
     }
 
     #create-tab .btn-share {
         margin-top: 0;
-    }
-
-    #create-tab .studio-header {
-        grid-area: studio;
-    }
-
-    #create-tab .genre-selector {
-        grid-area: genres;
-    }
-
-    #create-tab .sequencer-container {
-        grid-area: sequencer;
-    }
-
-    #create-tab .step-indicators {
-        grid-area: steps;
-    }
-
-    #create-tab .bpm-control {
-        grid-area: bpm;
-    }
-
-    #create-tab .btn-share {
-        grid-area: share;
-    }
-
-    #create-tab .recorder-section {
-        grid-area: recorder;
-    }
-
-    #create-tab .piano-section {
-        grid-area: piano;
     }
 }
 
@@ -4580,6 +4526,29 @@ body {
     font-weight: 900;
     letter-spacing: 0.06em;
     text-transform: uppercase;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.fx-rack-header span {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.fx-context-badge {
+    font-size: 0.6rem;
+    background: var(--pool);
+    color: white;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-weight: bold;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+}
+.fx-context-badge.global {
+    background: #656b76;
 }
 
 /* Modular Effects Processor */
@@ -5273,6 +5242,7 @@ body {
     gap: 0.5rem;
     padding: 0.75rem 0.85rem;
     align-items: center;
+    justify-content: space-between;
 }
 
 .master-control-item {
@@ -6109,5 +6079,293 @@ body {
     .arrange-pattern-palette {
         flex-direction: column;
         align-items: flex-start;
+    }
+}
+
+/* ============================================
+   DESKTOP LAYOUT OVERHAUL (≥1024px)
+   Full-width layouts, sidebar nav, better grids
+   ============================================ */
+
+@media (min-width: 1024px) {
+    /* --- App Container: full width --- */
+    .app-container {
+        max-width: 100% !important;
+        border-left: none !important;
+        border-right: none !important;
+    }
+
+    /* --- Navigation: left sidebar --- */
+    .main-nav {
+        position: fixed !important;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        right: auto !important;
+        width: 82px !important;
+        transform: none !important;
+        flex-direction: column;
+        justify-content: center;
+        gap: 0.15rem;
+        padding: 1.5rem 0.4rem;
+        border-top: none !important;
+        border-right: 2px solid var(--line, #262114) !important;
+        border-left: none !important;
+        border-bottom: none !important;
+        border-radius: 0 !important;
+        box-shadow: 4px 0 16px rgba(23, 26, 31, 0.08) !important;
+        z-index: 200;
+    }
+
+    .nav-btn {
+        padding: 0.7rem 0.25rem;
+        border-radius: 10px;
+        flex: 0 0 auto;
+    }
+
+    .nav-btn i {
+        font-size: 1.25rem;
+    }
+
+    .nav-btn span {
+        font-size: 0.58rem;
+        letter-spacing: 0.02em;
+    }
+
+    /* --- Tab Content: offset for sidebar, full width --- */
+    .tab-content {
+        margin-left: 82px;
+        width: calc(100% - 82px) !important;
+        max-width: 100% !important;
+        padding: 1.75rem 2.5rem 2rem !important;
+        padding-bottom: 2rem !important;
+        box-sizing: border-box;
+    }
+
+    /* ==== CREATE TAB ==== */
+    #create-tab.active {
+        display: grid !important;
+        grid-template-columns: 1fr 380px;
+        gap: 1.5rem;
+        max-width: 100% !important;
+        align-items: stretch;
+    }
+
+    #create-tab .sequencer-container {
+        display: grid !important;
+        grid-template-columns: 80px 1fr;
+        gap: 0.5rem;
+        align-items: stretch;
+    }
+
+    /* Wrap the left side elements so they span column 1 */
+    #create-tab .studio-header,
+    #create-tab .sequencer-container,
+    #create-tab .step-indicators,
+    #create-tab .mixer-strip,
+    #create-tab .controls-row,
+    #create-tab .fx-rack,
+    #create-tab .master-output-section,
+    #create-tab .btn-share {
+        grid-column: 1;
+        min-width: 0; /* CRITICAL: prevents large content from blowing out the 1fr track */
+    }
+
+    /* Group recorder and piano in column 2 */
+    #create-tab .recorder-section,
+    #create-tab .piano-section {
+        grid-column: 2;
+        width: 100%;
+        display: block; /* override any inline-block */
+        min-width: 0;
+    }
+
+    #create-tab .recorder-section {
+        grid-row: 1;
+    }
+
+    #create-tab .piano-section {
+        grid-row: 2 / span 5;
+    }
+
+    /* Sequencer grid cells adapt to available width */
+    .grid-cell {
+        min-width: 0;
+        min-height: 0;
+    }
+
+    .track-label {
+        width: 80px;
+        font-size: 0.72rem;
+    }
+
+    .step-indicators {
+        margin-left: 90px !important;
+        grid-template-columns: 80px repeat(var(--steps, 8), minmax(0, 56px)) !important;
+    }
+
+    .step-indicator {
+        min-width: 0;
+        padding: 0.4rem 0.1rem;
+        font-size: 0.8rem;
+    }
+
+    /* FX rack: 4 columns */
+    .fx-modular-container {
+        grid-template-columns: repeat(4, 1fr);
+    }
+
+    /* Master output: horizontal controls */
+    .master-controls {
+        display: flex;
+        gap: 2rem;
+    }
+
+    .master-control-item {
+        flex: 1;
+    }
+
+    /* Controls rows side by side */
+    .controls-row {
+        flex-direction: row !important;
+    }
+
+    /* ==== DISCOVER TAB ==== */
+    #discover-tab .discover-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    #discover-tab .discover-header h2 {
+        margin-bottom: 0;
+        white-space: nowrap;
+    }
+
+    #discover-tab .mood-filter {
+        justify-content: flex-end;
+        flex-wrap: wrap;
+    }
+
+    #discover-tab .beats-feed {
+        display: grid !important;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 1.25rem;
+    }
+
+    /* ==== SOUNDS / LIBRARY TAB ==== */
+    #library-tab .library-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    #library-tab .library-header h2 {
+        margin-bottom: 0;
+        white-space: nowrap;
+    }
+
+    #library-tab .search-bar {
+        max-width: 400px;
+        flex: 1;
+    }
+
+    #library-tab .sound-categories {
+        grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+        gap: 1rem;
+    }
+
+    #library-tab .stem-list {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1rem;
+    }
+
+    /* ==== PROFILE TAB ==== */
+    #profile-tab .profile-header {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+        text-align: left;
+        padding: 2rem 0;
+    }
+
+    #profile-tab .avatar {
+        margin: 0;
+        flex-shrink: 0;
+    }
+
+    #profile-tab .profile-header h2 {
+        margin-bottom: 0.15rem;
+    }
+
+    #profile-tab .profile-stats {
+        max-width: 480px;
+    }
+
+    #profile-tab .empty-state {
+        max-width: 100%;
+    }
+
+    /* ==== ARRANGE TAB ==== */
+    #arrange-tab.active {
+        max-width: 100% !important;
+    }
+}
+
+/* Extra wide: 4-column discover, 3-column stems */
+@media (min-width: 1440px) {
+    .tab-content {
+        padding: 2rem 4rem 2rem !important;
+    }
+
+    #discover-tab .beats-feed {
+        grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    }
+
+    #library-tab .stem-list {
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    }
+
+    .grid-cell {
+        /* Keep fixed 36px size */
+    }
+}
+
+/* Tablet in-between: still bottom nav but wider content */
+@media (min-width: 768px) and (max-width: 1023px) {
+    .app-container {
+        max-width: 100% !important;
+        border-left: none !important;
+        border-right: none !important;
+    }
+
+    .tab-content {
+        max-width: 100% !important;
+        padding: 1.5rem 2rem 112px !important;
+    }
+
+    #create-tab.active {
+        max-width: 100% !important;
+    }
+
+    .main-nav {
+        width: min(680px, calc(100% - 36px));
+    }
+
+    #discover-tab .beats-feed {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1rem;
+    }
+
+    #library-tab .stem-list {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1rem;
     }
 }
