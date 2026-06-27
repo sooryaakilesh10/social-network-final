@@ -56,13 +56,18 @@
     bootstrap: async function () {
       var authBtn = document.getElementById("auth-btn");
       var onbSignin = document.getElementById("onboarding-signin");
+      var feedTabs = document.getElementById("feed-tabs");
+      var suggested = document.getElementById("suggested-creators");
       if (!LF.enabled) {
-        // offline mode: no auth UI anywhere
+        // offline mode: no auth/recommendation UI anywhere
         if (authBtn) authBtn.style.display = "none";
         if (onbSignin) onbSignin.style.display = "none";
+        if (feedTabs) feedTabs.style.display = "none";
+        if (suggested) suggested.style.display = "none";
         return;
       }
       if (onbSignin) onbSignin.style.display = ""; // show "Sign in" on the first page
+      if (feedTabs) feedTabs.style.display = "";   // For You / Following / Trending
       api.configure({ baseUrl: window.LOOPFLOW_API_BASE });
 
       // Who am I? (cookie session). 401 simply means "logged out".
@@ -73,11 +78,14 @@
       }
       LF.updateAuthUI();
 
-      // Discover feed is public — load it whether or not we're signed in.
-      await LF.loadDiscover();
+      // Discover feed — personalized "For You" ranking by default.
+      await LF.loadDiscover(AppState.discoverMode || "foryou");
 
-      // Saved creations require a session.
-      if (LF.user) await LF.refreshMine();
+      // Saved creations + suggested creators require a session.
+      if (LF.user) {
+        await LF.refreshMine();
+        await LF.loadSuggested();
+      }
     },
 
     updateAuthUI: function () {
@@ -110,8 +118,11 @@
         LF.user = null;
         AppState.savedBeats = [];
         LF.updateAuthUI();
+        var suggested = document.getElementById("suggested-creators");
+        if (suggested) suggested.style.display = "none";
         if (typeof updateProfileStats === "function") updateProfileStats();
         if (typeof populateSavedFeed === "function") populateSavedFeed();
+        LF.loadDiscover("foryou");
         if (typeof showToast === "function") showToast("Signed out", "info");
       } else {
         api.auth.startLogin(location.href);
@@ -119,9 +130,17 @@
     },
 
     // ---- data ----------------------------------------------------------
-    loadDiscover: async function () {
+    // mode: "foryou" (personalized) | "following" (friends) | "top" (trending)
+    loadDiscover: async function (mode) {
+      mode = mode || AppState.discoverMode || "foryou";
+      AppState.discoverMode = mode;
+      // Reflect the active feed tab.
+      var tabs = document.querySelectorAll(".feed-tab");
+      for (var i = 0; i < tabs.length; i++) {
+        tabs[i].classList.toggle("active", tabs[i].getAttribute("data-mode") === mode);
+      }
       try {
-        var page = await api.feed.discover({ sort: "recent" });
+        var page = await api.feed.discover({ sort: mode });
         var items = (page && page.items) || [];
         AppState.discoverBeats = items.map(LF.mapView);
         // Seed liked state so hearts render correctly.
@@ -132,6 +151,39 @@
         AppState.discoverBeats = [];
       }
       if (typeof populateDiscoveryFeed === "function") populateDiscoveryFeed();
+    },
+
+    // Suggested creators to follow (friends-of-friends + popular).
+    loadSuggested: async function () {
+      var el = document.getElementById("suggested-creators");
+      if (!el) return;
+      if (!LF.user) { el.style.display = "none"; return; }
+      try {
+        var users = await api.recommendations.users(10);
+        LF.renderSuggested(users || []);
+      } catch (e) {
+        el.style.display = "none";
+      }
+    },
+
+    renderSuggested: function (users) {
+      var el = document.getElementById("suggested-creators");
+      if (!el) return;
+      if (!users.length) { el.style.display = "none"; return; }
+      el.style.display = "";
+      var esc = function (s) { return String(s == null ? "" : s).replace(/[<>&"']/g, ""); };
+      var cards = users.map(function (u) {
+        if (u && u.id && u.username) LF.authorIndex[u.username] = u.id;
+        var name = esc(u.displayName || u.username);
+        var handle = esc(u.username);
+        return '<div class="suggest-card">'
+          + '<div class="suggest-avatar"><i class="fas fa-user"></i></div>'
+          + '<div class="suggest-name">' + name + '</div>'
+          + '<div class="suggest-handle">@' + handle + '</div>'
+          + '<button class="suggest-follow" onclick="followSuggested(\'' + esc(u.id) + '\',\'' + handle + '\', this)">Follow</button>'
+          + '</div>';
+      }).join("");
+      el.innerHTML = '<div class="suggest-title">Suggested creators</div><div class="suggest-row">' + cards + '</div>';
     },
 
     refreshMine: async function () {

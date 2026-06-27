@@ -19,6 +19,7 @@ const AppState = {
     savedBeats: [],
     currentBeatId: null, // server id of the beat currently in the editor (for Share)
     discoverBeats: null, // backend-loaded public feed; null = use SampleBeats
+    discoverMode: 'foryou', // foryou | following | top
     likedBeats: new Set(),
     followedArtists: new Set(),
     voiceRecordingUrl: null,
@@ -777,16 +778,54 @@ function populateDiscoveryFeed() {
     const feed = document.getElementById('beats-feed');
     feed.innerHTML = '';
 
-    // Prefer the live backend feed; fall back to the built-in samples when the
-    // backend is offline or has no public beats yet.
-    const beats = (AppState.discoverBeats && AppState.discoverBeats.length)
-        ? AppState.discoverBeats
-        : SampleBeats;
+    // Live backend feed loaded with results → render it.
+    if (AppState.discoverBeats && AppState.discoverBeats.length) {
+        AppState.discoverBeats.forEach(beat => feed.appendChild(createBeatCard(beat)));
+        return;
+    }
 
-    beats.forEach(beat => {
-        const card = createBeatCard(beat);
-        feed.appendChild(card);
-    });
+    // Loaded but empty (backend on, no matching posts) → contextual empty state.
+    if (AppState.discoverBeats && window.LF && LF.enabled) {
+        const mode = AppState.discoverMode || 'foryou';
+        let msg;
+        if (mode === 'following') {
+            msg = LF.user
+                ? "You're not following anyone yet — follow some creators below to fill this feed."
+                : 'Sign in to see posts from people you follow.';
+        } else {
+            msg = 'No posts yet. Share a beat to get things started!';
+        }
+        feed.innerHTML = `<div class="empty-state" style="text-align:center; padding:2rem; color: var(--text-muted); grid-column: 1 / -1;">${msg}</div>`;
+        return;
+    }
+
+    // Offline / backend not configured → built-in samples so the page isn't empty.
+    SampleBeats.forEach(beat => feed.appendChild(createBeatCard(beat)));
+}
+
+// Switch the Discover feed mode (For You / Following / Trending).
+function setDiscoverMode(mode) {
+    if (window.LF && LF.enabled) {
+        LF.loadDiscover(mode);
+    }
+}
+
+// Follow a suggested creator from the Discover strip.
+function followSuggested(userId, username, btn) {
+    if (!(window.LF && LF.user)) {
+        showToast('Sign in to follow creators', 'info');
+        return;
+    }
+    AppState.followedArtists.add(username);
+    if (LF.authorIndex) LF.authorIndex[username] = userId;
+    if (btn) {
+        btn.textContent = 'Following';
+        btn.classList.add('following');
+        btn.disabled = true;
+    }
+    if (window.LoopFlowAPI) window.LoopFlowAPI.users.follow(userId).catch(function () {});
+    showToast('Following @' + username, 'success');
+    updateProfileStats();
 }
 
 // ============================================

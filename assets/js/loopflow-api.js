@@ -120,5 +120,10 @@
       follow: function (id) { return request("POST", "/api/users/" + id + "/follow"); },
       unfollow: function (id) { return request("DELETE", "/api/users/" + id + "/follow"); },
     },
+
+    recommendations: {
+      // Suggested creators to follow (friends-of-friends + popular).
+      users: function (limit) { return request("GET", "/api/recommendations/users", { query: { limit: limit } }).then(function (d) { return (d && d.users) || []; }); },
+    },
   };
 })();
