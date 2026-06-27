@@ -1,0 +1,6 @@
+.wrangler/
+dist/
+*.log
+
+# Backend is its own git repository (deployed separately).
+backend/

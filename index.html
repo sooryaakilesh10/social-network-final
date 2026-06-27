@@ -36,7 +36,10 @@
                 <button id="start-btn" class="btn-primary">
                     <i class="fas fa-play"></i> Start Creating
                 </button>
-                <p class="guest-text">No signup required</p>
+                <button id="onboarding-signin" class="btn-primary" onclick="LF.onAuthClick()" style="display:none; margin-top:0.75rem; background:#fff; color:#111827; border:2px solid #111827;">
+                    <i class="fas fa-sign-in-alt"></i> Sign in with Google
+                </button>
+                <p class="guest-text" id="guest-text">No signup required</p>
             </div>
         </div>
 
@@ -72,6 +75,11 @@
             <button class="nav-btn" data-tab="profile">
                 <i class="fas fa-user"></i>
                 <span>Profile</span>
+            </button>
+            <!-- Auth (hidden in offline mode by loopflow-integration.js) -->
+            <button id="auth-btn" class="nav-btn" onclick="LF.onAuthClick()">
+                <i id="auth-icon" class="fas fa-sign-in-alt"></i>
+                <span id="auth-label">Sign In</span>
             </button>
         </nav>
 
@@ -708,8 +716,8 @@
                 <div class="avatar">
                     <i class="fas fa-user"></i>
                 </div>
-                <h2>Guest User</h2>
-                <p>Create an account to save your beats</p>
+                <h2 id="profile-name">Guest User</h2>
+                <p id="profile-sub">Create an account to save your beats</p>
             </div>
 
             <div class="profile-stats">
@@ -856,7 +864,11 @@
         <div id="toast-container"></div>
     </div>
 
-    <script src="main.js?v=2"></script>
+    <!-- Backend integration (offline-safe; no-op until LOOPFLOW_API_BASE is set) -->
+    <script src="assets/js/loopflow-config.js?v=2"></script>
+    <script src="assets/js/loopflow-api.js?v=2"></script>
+    <script src="assets/js/loopflow-integration.js?v=2"></script>
+    <script src="main.js?v=4"></script>
 </body>
 
 </html>

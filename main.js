@@ -17,6 +17,7 @@ const AppState = {
     shareStep: 1,
     projectName: 'My First Beat',
     savedBeats: [],
+    discoverBeats: null, // backend-loaded public feed; null = use SampleBeats
     likedBeats: new Set(),
     followedArtists: new Set(),
     voiceRecordingUrl: null,
@@ -358,8 +359,30 @@ function init() {
     // Set up event listeners
     setupEventListeners();
 
-    // Check for saved state
+    // If the URL already points at a tab (i.e. this is a refresh, not a first
+    // visit), skip the onboarding screen and restore that tab. Audio resumes on
+    // the first user gesture below.
+    const validTabs = ['create', 'arrange', 'discover', 'saved', 'profile'];
+    const hashTab = (location.hash || '').replace('#', '');
+    if (validTabs.indexOf(hashTab) !== -1) {
+        document.getElementById('onboarding').classList.add('hidden');
+        switchTab(hashTab);
+    }
+
+    // Browsers block audio until a user gesture; resume on the first one so a
+    // refreshed page (where startApp wasn't clicked) still plays.
+    ['pointerdown', 'keydown', 'touchstart'].forEach(function (ev) {
+        document.addEventListener(ev, ensureAudio, { once: true, capture: true });
+    });
+
+    // Check for saved state (localStorage; overridden by the server when signed in)
     loadSavedState();
+
+    // Connect to the backend (auth + server persistence + live feed).
+    // No-op in offline mode (LOOPFLOW_API_BASE not set).
+    if (window.LF) {
+        LF.bootstrap().catch(function (e) { console.warn('LoopFlow backend bootstrap failed', e); });
+    }
 }
 
 function generateGrid() {
@@ -565,12 +588,25 @@ function setupEventListeners() {
 
 }
 
+// Build/resume the audio engine. Safe to call repeatedly; only the first call
+// (which must follow a user gesture) actually starts it.
+function ensureAudio() {
+    if (AppState.audioContextStarted) return;
+    try { Tone.start(); } catch (e) {}
+    initAudio();
+}
+
 function startApp() {
     document.getElementById('onboarding').classList.add('hidden');
 
+    // Mark that we've entered the app so a refresh restores this tab instead
+    // of showing the onboarding screen again.
+    if (!location.hash) {
+        try { history.replaceState(null, '', '#' + AppState.currentTab); } catch (e) {}
+    }
+
     // Initialize audio context on user interaction
-    Tone.start();
-    initAudio();
+    ensureAudio();
 
     // Show tutorial for first-time users
     if (!localStorage.getItem('loopflow_tutorial_seen')) {
@@ -589,6 +625,10 @@ function skipTutorial() {
 
 function switchTab(tab) {
     AppState.currentTab = tab;
+
+    // Remember the active tab in the URL so a refresh stays on this page
+    // (replaceState keeps it out of the back/forward history).
+    try { history.replaceState(null, '', '#' + tab); } catch (e) {}
 
     // Update nav buttons
     document.querySelectorAll('.nav-btn').forEach(btn => {
@@ -736,7 +776,13 @@ function populateDiscoveryFeed() {
     const feed = document.getElementById('beats-feed');
     feed.innerHTML = '';
 
-    SampleBeats.forEach(beat => {
+    // Prefer the live backend feed; fall back to the built-in samples when the
+    // backend is offline or has no public beats yet.
+    const beats = (AppState.discoverBeats && AppState.discoverBeats.length)
+        ? AppState.discoverBeats
+        : SampleBeats;
+
+    beats.forEach(beat => {
         const card = createBeatCard(beat);
         feed.appendChild(card);
     });
@@ -747,7 +793,7 @@ function populateDiscoveryFeed() {
 // ============================================
 function saveProject() {
     const beat = {
-        id: Date.now(),
+        id: 'local-' + Date.now(),
         title: AppState.projectName || 'Untitled Beat',
         author: 'You',
         mood: 'custom',
@@ -757,16 +803,36 @@ function saveProject() {
         grid: JSON.parse(JSON.stringify(AppState.grid)),
         gridSteps: AppState.gridSteps
     };
+
+    // Signed in? Persist to the backend (and let it refresh the feeds).
+    if (window.LF && LF.user) {
+        LF.createBeat(beat);
+        return;
+    }
+
     AppState.savedBeats.push(beat);
     localStorage.setItem('loopflow_beats', JSON.stringify(AppState.savedBeats));
     updateProfileStats();
     populateSavedFeed();
-    showToast('Project saved successfully!', 'success');
+    const msg = (window.LF && LF.enabled)
+        ? 'Saved locally — sign in to save to your account.'
+        : 'Project saved successfully!';
+    showToast(msg, 'success');
 }
 
-function loadProject(id) {
-    const beat = AppState.savedBeats.find(b => b.id === id);
+async function loadProject(id) {
+    let beat = AppState.savedBeats.find(b => String(b.id) === String(id));
     if (!beat) return;
+
+    // Server list views omit the heavy document; fetch the full beat on demand.
+    if (beat.serverBeat && !beat.grid && window.LF) {
+        const full = await LF.openBeat(beat.id);
+        if (full) beat = full;
+    }
+    if (!beat.grid) {
+        showToast('Could not load this beat', 'error');
+        return;
+    }
 
     AppState.projectName = beat.title;
     document.getElementById('project-name').value = beat.title;
@@ -813,13 +879,13 @@ function createBeatCard(beat, isSaved = false) {
     card.dataset.mood = beat.mood;
     card.dataset.genre = beat.genre;
 
-    const isLiked = AppState.likedBeats.has(beat.id);
+    const isLiked = AppState.likedBeats.has(String(beat.id));
     const isFollowing = AppState.followedArtists.has(beat.author);
 
     card.innerHTML = `
         <div class="beat-visualizer">
             <canvas id="visualizer-${beat.id}"></canvas>
-            <div class="beat-play-overlay" onclick="playBeat(${beat.id})">
+            <div class="beat-play-overlay" onclick="playBeat('${beat.id}')">
                 <i class="fas fa-play"></i>
             </div>
         </div>
@@ -837,17 +903,17 @@ function createBeatCard(beat, isSaved = false) {
                 ` : ''}
             </div>
             <div class="beat-actions">
-                <button class="beat-action-btn ${isLiked ? 'active' : ''}" onclick="likeBeat(${beat.id})">
+                <button class="beat-action-btn ${isLiked ? 'active' : ''}" onclick="likeBeat('${beat.id}')">
                     <i class="fas fa-fire"></i> ${beat.likes}
                 </button>
-                <button class="beat-action-btn" onclick="reactToBeat(${beat.id}, 'mind')">
+                <button class="beat-action-btn" onclick="reactToBeat('${beat.id}', 'mind')">
                     <i class="fas fa-brain"></i>
                 </button>
-                <button class="beat-action-btn" onclick="reactToBeat(${beat.id}, 'headphones')">
+                <button class="beat-action-btn" onclick="reactToBeat('${beat.id}', 'headphones')">
                     <i class="fas fa-headphones"></i>
                 </button>
                 ${isSaved ? `
-                <button class="remix-btn" style="margin-left: auto; border: 2px solid var(--text-dark); background: transparent; color: var(--text-dark); font-weight: bold; border-radius: var(--radius-full); padding: 0.25rem 0.75rem;" onclick="loadProject(${beat.id})">
+                <button class="remix-btn" style="margin-left: auto; border: 2px solid var(--text-dark); background: transparent; color: var(--text-dark); font-weight: bold; border-radius: var(--radius-full); padding: 0.25rem 0.75rem;" onclick="loadProject('${beat.id}')">
                     <i class="fas fa-folder-open"></i> Load
                 </button>
                 ` : ''}
@@ -878,15 +944,27 @@ function filterByMood(mood) {
 }
 
 function likeBeat(id) {
-    if (AppState.likedBeats.has(id)) {
-        AppState.likedBeats.delete(id);
+    const key = String(id);
+    let nowLiked;
+    if (AppState.likedBeats.has(key)) {
+        AppState.likedBeats.delete(key);
+        nowLiked = false;
     } else {
-        AppState.likedBeats.add(id);
+        AppState.likedBeats.add(key);
+        nowLiked = true;
         if (navigator.vibrate) navigator.vibrate(20);
+    }
+
+    // Keep the like count in sync for server beats + persist to the backend.
+    const beat = (AppState.discoverBeats || []).find(b => String(b.id) === key);
+    if (beat && beat.serverBeat) {
+        beat.likes = Math.max(0, (beat.likes || 0) + (nowLiked ? 1 : -1));
+        if (window.LF) LF.toggleLike(beat.id, nowLiked);
     }
 
     // Update UI
     populateDiscoveryFeed();
+    updateProfileStats();
 }
 
 function reactToBeat(id, type) {
@@ -911,6 +989,11 @@ function remixBeat(id) {
 
 function playBeat(id) {
     showToast('Playing beat...', 'success');
+    // Fire-and-forget play counter for real server beats.
+    const beat = (AppState.discoverBeats || []).find(b => String(b.id) === String(id));
+    if (beat && beat.serverBeat && window.LoopFlowAPI && window.LF && LF.enabled) {
+        window.LoopFlowAPI.beats.play(beat.id).catch(function () {});
+    }
 }
 
 // ============================================
@@ -1148,12 +1231,24 @@ function handleExport(e) {
 
 function saveBeat() {
     const beat = {
-        id: Date.now(),
+        id: 'local-' + Date.now(),
+        title: AppState.projectName || 'Untitled Beat',
+        author: 'You',
+        mood: 'custom',
+        likes: 0,
         name: AppState.projectName,
         genre: AppState.currentGenre,
+        bpm: AppState.bpm,
         date: new Date().toLocaleDateString(),
-        grid: JSON.parse(JSON.stringify(AppState.grid))
+        grid: JSON.parse(JSON.stringify(AppState.grid)),
+        gridSteps: AppState.gridSteps
     };
+
+    // Signed in? Persist to the backend instead of localStorage.
+    if (window.LF && LF.user) {
+        LF.createBeat(beat);
+        return;
+    }
 
     AppState.savedBeats.push(beat);
     localStorage.setItem('loopflow_beats', JSON.stringify(AppState.savedBeats));
@@ -1193,6 +1288,12 @@ function followArtist(author) {
         b.innerHTML = isFollowing ? '<i class="fas fa-user-check"></i> Following' : '<i class="fas fa-user-plus"></i> Follow';
         b.classList.toggle('following', isFollowing);
     });
+
+    // Persist to the backend for real (server) artists when signed in.
+    if (window.LF && LF.user) {
+        LF.toggleFollow(author, AppState.followedArtists.has(author));
+    }
+
     updateProfileStats();
 }
 

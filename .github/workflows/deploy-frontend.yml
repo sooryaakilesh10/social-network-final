@@ -1,0 +1,41 @@
+name: Deploy Frontend (Cloudflare Pages)
+
+# Deploys the static site to the "loopflow" Cloudflare Pages project.
+# Requires two repository secrets (Settings → Secrets and variables → Actions):
+#   - CLOUDFLARE_API_TOKEN   (token with "Cloudflare Pages: Edit" permission)
+#   - CLOUDFLARE_ACCOUNT_ID  (your Cloudflare account ID)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  deployments: write
+
+concurrency:
+  group: pages-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # No build step — assemble only the files the site actually serves
+      # so internal docs (README/*.md), tests, and VCS metadata aren't published.
+      - name: Stage static site
+        run: |
+          mkdir -p dist
+          cp index.html main.js styles.css confirm-modal.css dist/
+          cp -r assets dist/
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=loopflow --branch=main
