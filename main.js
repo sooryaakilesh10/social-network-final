@@ -17,6 +17,7 @@ const AppState = {
     shareStep: 1,
     projectName: 'My First Beat',
     savedBeats: [],
+    currentBeatId: null, // server id of the beat currently in the editor (for Share)
     discoverBeats: null, // backend-loaded public feed; null = use SampleBeats
     likedBeats: new Set(),
     followedArtists: new Set(),
@@ -834,6 +835,9 @@ async function loadProject(id) {
         return;
     }
 
+    // Editing an existing beat: a later Save/Share targets this one.
+    AppState.currentBeatId = beat.serverBeat ? beat.id : null;
+
     AppState.projectName = beat.title;
     document.getElementById('project-name').value = beat.title;
     AppState.bpm = beat.bpm;
@@ -854,6 +858,15 @@ async function loadProject(id) {
     generateGrid();
     switchTab('create');
     showToast(`Loaded "${beat.title}"`, 'success');
+}
+
+// Post an already-saved beat to the Discover feed (makes it public).
+function shareSavedBeat(id) {
+    if (!(window.LF && LF.user)) {
+        showToast('Sign in to post to Discover', 'info');
+        return;
+    }
+    LF.publishBeat(id);
 }
 
 function populateSavedFeed() {
@@ -916,6 +929,11 @@ function createBeatCard(beat, isSaved = false) {
                 <button class="remix-btn" style="margin-left: auto; border: 2px solid var(--text-dark); background: transparent; color: var(--text-dark); font-weight: bold; border-radius: var(--radius-full); padding: 0.25rem 0.75rem;" onclick="loadProject('${beat.id}')">
                     <i class="fas fa-folder-open"></i> Load
                 </button>
+                ${beat.serverBeat ? `
+                <button class="remix-btn" style="border: 2px solid var(--text-dark); ${beat.visibility === 'public' ? 'background: var(--text-dark); color: #fff;' : 'background: transparent; color: var(--text-dark);'} font-weight: bold; border-radius: var(--radius-full); padding: 0.25rem 0.75rem;" onclick="shareSavedBeat('${beat.id}')" ${beat.visibility === 'public' ? 'disabled' : ''}>
+                    <i class="fas fa-${beat.visibility === 'public' ? 'check' : 'share'}"></i> ${beat.visibility === 'public' ? 'Posted' : 'Post'}
+                </button>
+                ` : ''}
                 ` : ''}
             </div>
         </div>
@@ -1123,8 +1141,19 @@ function nextShareStep() {
         updateShareStep();
     } else {
         closeShareModal();
-        showToast('Beat shared successfully!', 'success');
-        saveBeat();
+        if (window.LF && LF.user) {
+            // Publish the current beat to the Discover feed (like posting).
+            LF.shareBeat({
+                title: AppState.projectName,
+                genre: AppState.currentGenre,
+                bpm: AppState.bpm
+            });
+        } else if (window.LF && LF.enabled) {
+            showToast('Sign in to post to Discover', 'info');
+        } else {
+            showToast('Beat shared successfully!', 'success');
+            saveBeat();
+        }
     }
 }
 

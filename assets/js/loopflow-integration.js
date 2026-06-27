@@ -31,6 +31,7 @@
         likes: v.likesCount || 0,
         genre: v.genre,
         bpm: v.bpm,
+        visibility: v.visibility || "private",
         grid: v.document ? v.document.grid : null,
         gridSteps: v.document ? v.document.gridSteps : null,
         serverBeat: true,
@@ -145,25 +146,75 @@
       if (typeof populateSavedFeed === "function") populateSavedFeed();
     },
 
-    // Returns true if it handled the save on the server, false to fall back.
+    // Save a PRIVATE beat to the user's account (shows in "Saved", NOT in
+    // Discover). Returns true if handled on the server, false to fall back.
     createBeat: async function (localBeat) {
       try {
-        await api.beats.create({
+        var beat = await api.beats.create({
           title: localBeat.title || "Untitled Beat",
           genre: localBeat.genre,
           mood: localBeat.mood || "custom",
           bpm: localBeat.bpm,
-          visibility: "public",
+          visibility: "private",
           document: LF.snapshotDocument(),
         });
+        // Remember it so a later "Share" publishes this exact beat.
+        if (beat && beat.id) AppState.currentBeatId = beat.id;
         await LF.refreshMine();
-        await LF.loadDiscover();
-        if (typeof showToast === "function") showToast("Saved to your account!", "success");
+        if (typeof showToast === "function") showToast("Saved to your account", "success");
         return true;
       } catch (e) {
         if (typeof showToast === "function") {
           showToast("Couldn't save to server — kept a local copy.", "error");
         }
+        return false;
+      }
+    },
+
+    // Publish the CURRENT editor beat to Discover (like posting). Updates the
+    // beat we're editing if it exists, otherwise creates a public one.
+    shareBeat: async function (meta) {
+      meta = meta || {};
+      try {
+        if (AppState.currentBeatId) {
+          await api.beats.update(AppState.currentBeatId, {
+            visibility: "public",
+            document: LF.snapshotDocument(),
+            title: meta.title || "Untitled Beat",
+            genre: meta.genre,
+            bpm: meta.bpm,
+          });
+        } else {
+          var beat = await api.beats.create({
+            title: meta.title || "Untitled Beat",
+            genre: meta.genre,
+            mood: meta.mood || "custom",
+            bpm: meta.bpm,
+            visibility: "public",
+            document: LF.snapshotDocument(),
+          });
+          if (beat && beat.id) AppState.currentBeatId = beat.id;
+        }
+        await LF.refreshMine();
+        await LF.loadDiscover();
+        if (typeof showToast === "function") showToast("Posted to Discover!", "success");
+        return true;
+      } catch (e) {
+        if (typeof showToast === "function") showToast("Couldn't post to Discover.", "error");
+        return false;
+      }
+    },
+
+    // Publish a specific already-saved beat (from the Saved tab) to Discover.
+    publishBeat: async function (id) {
+      try {
+        await api.beats.update(id, { visibility: "public" });
+        await LF.refreshMine();
+        await LF.loadDiscover();
+        if (typeof showToast === "function") showToast("Posted to Discover!", "success");
+        return true;
+      } catch (e) {
+        if (typeof showToast === "function") showToast("Couldn't post to Discover.", "error");
         return false;
       }
     },
