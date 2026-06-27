@@ -18,6 +18,7 @@ const AppState = {
     projectName: 'My First Beat',
     savedBeats: [],
     likedBeats: new Set(),
+    followedArtists: new Set(),
     voiceRecordingUrl: null,
     pianoRecordingUrl: null,
     pianoNotes: [],
@@ -118,9 +119,23 @@ let synths = {};
 let loop = null;
 let pianoLoop = null;
 let progressAnimationFrame = null; // For smooth progress bar animation
+let masterBus = null; // Everything routes here → master FX → speakers
 
 function initAudio() {
     if (AppState.audioContextStarted) return;
+
+    // Master bus: every voice routes into this node, which then runs through the
+    // master compressor/limiter before reaching the speakers. Without it the
+    // master processors would sit after Tone.Destination and do nothing.
+    masterBus = new Tone.Gain();
+    masterBus.connect(Tone.Destination);
+
+    // The piano synth may have been created (routed straight to the speakers)
+    // before the master bus existed — re-route it through the bus now.
+    if (pianoSynth) {
+        pianoSynth.disconnect();
+        pianoSynth.connect(masterBus);
+    }
 
     // Initialize synthesizers for each track
     synths = {
@@ -129,11 +144,11 @@ function initAudio() {
             octaves: 10,
             oscillator: { type: "sine" },
             envelope: { attack: 0.001, decay: 0.4, sustain: 0.01, release: 1.4 }
-        }).toDestination(),
+        }).connect(masterBus),
         snare: new Tone.NoiseSynth({
             noise: { type: "white" },
             envelope: { attack: 0.005, decay: 0.1, sustain: 0 }
-        }).toDestination(),
+        }).connect(masterBus),
         hihat: new Tone.MetalSynth({
             frequency: 200,
             envelope: { attack: 0.001, decay: 0.1, release: 0.01 },
@@ -141,20 +156,20 @@ function initAudio() {
             modulationIndex: 32,
             resonance: 4000,
             octaves: 1.5
-        }).toDestination(),
+        }).connect(masterBus),
         clap: new Tone.NoiseSynth({
             noise: { type: "pink" },
             envelope: { attack: 0.001, decay: 0.3, sustain: 0 }
-        }).toDestination(),
+        }).connect(masterBus),
         bass: new Tone.MonoSynth({
             oscillator: { type: "sawtooth" },
             envelope: { attack: 0.1, decay: 0.3, sustain: 0.2, release: 2 },
             filterEnvelope: { attack: 0.001, decay: 0.1, sustain: 0.5, baseFrequency: 200, octaves: 2.6 }
-        }).toDestination(),
+        }).connect(masterBus),
         synth: new Tone.PolySynth(Tone.Synth, {
             oscillator: { type: "triangle" },
             envelope: { attack: 0.02, decay: 0.1, sustain: 0.3, release: 1 }
-        }).toDestination(),
+        }).connect(masterBus),
         fx: new Tone.AMSynth({
             harmonicity: 3,
             detune: 0,
@@ -162,11 +177,11 @@ function initAudio() {
             envelope: { attack: 0.01, decay: 0.01, sustain: 1, release: 0.5 },
             modulation: { type: "square" },
             modulationEnvelope: { attack: 0.5, decay: 0, sustain: 1, release: 0.5 }
-        }).toDestination(),
+        }).connect(masterBus),
         vocal: new Tone.Sampler({
             urls: {},
             baseUrl: ""
-        }).toDestination()
+        }).connect(masterBus)
     };
 
     // Voice player for recordings
@@ -337,8 +352,8 @@ function init() {
     // Initialize discovery feed
     populateDiscoveryFeed();
 
-    // Initialize stem packs
-    populateStemPacks();
+    // Initialize saved feed
+    populateSavedFeed();
 
     // Set up event listeners
     setupEventListeners();
@@ -350,7 +365,7 @@ function init() {
 function generateGrid() {
     const grid = document.getElementById('sequencer-grid');
     grid.innerHTML = '';
-    grid.style.gridTemplateColumns = `repeat(${AppState.gridSteps}, 36px)`;
+    grid.style.gridTemplateColumns = `repeat(${AppState.gridSteps}, var(--cell-width, 36px))`;
 
     for (let track = 0; track < 8; track++) {
         for (let step = 0; step < AppState.gridSteps; step++) {
@@ -422,7 +437,7 @@ function regenerateStepIndicators() {
     if (!container) return;
 
     container.innerHTML = '';
-    container.style.gridTemplateColumns = `60px repeat(${AppState.gridSteps}, 36px)`;
+    container.style.gridTemplateColumns = `var(--label-width, 60px) repeat(${AppState.gridSteps}, var(--cell-width, 36px))`;
     container.style.setProperty('--steps', AppState.gridSteps);
 
     const spacer = document.createElement('div');
@@ -442,6 +457,7 @@ function regenerateStepIndicators() {
 
 
 function toggleCell(track, step) {
+    pushUndoState();
     AppState.grid[track][step] = !AppState.grid[track][step];
 
     const cell = document.querySelector(`.grid-cell[data-track="${track}"][data-step="${step}"]`);
@@ -611,6 +627,7 @@ function changeGenre(genre) {
 }
 
 function magicFill() {
+    pushUndoState();
     const pattern = MagicPatterns[AppState.currentGenre];
     const patternLength = pattern[0].length; // base pattern is 8 steps
 
@@ -643,6 +660,8 @@ function clearGrid() {
             if (!confirmed) {
                 return; // User cancelled, do nothing
             }
+
+            pushUndoState();
 
             // Clear all cells in the grid
             for (let track = 0; track < 8; track++) {
@@ -723,13 +742,79 @@ function populateDiscoveryFeed() {
     });
 }
 
-function createBeatCard(beat) {
+// ============================================
+// SAVED FEED & SAVING LOGIC
+// ============================================
+function saveProject() {
+    const beat = {
+        id: Date.now(),
+        title: AppState.projectName || 'Untitled Beat',
+        author: 'You',
+        mood: 'custom',
+        likes: 0,
+        genre: AppState.currentGenre,
+        bpm: AppState.bpm,
+        grid: JSON.parse(JSON.stringify(AppState.grid)),
+        gridSteps: AppState.gridSteps
+    };
+    AppState.savedBeats.push(beat);
+    localStorage.setItem('loopflow_beats', JSON.stringify(AppState.savedBeats));
+    updateProfileStats();
+    populateSavedFeed();
+    showToast('Project saved successfully!', 'success');
+}
+
+function loadProject(id) {
+    const beat = AppState.savedBeats.find(b => b.id === id);
+    if (!beat) return;
+
+    AppState.projectName = beat.title;
+    document.getElementById('project-name').value = beat.title;
+    AppState.bpm = beat.bpm;
+    document.getElementById('bpm-slider').value = beat.bpm;
+    document.getElementById('bpm-value').textContent = beat.bpm;
+    AppState.currentGenre = beat.genre;
+    AppState.gridSteps = beat.gridSteps;
+    
+    // Copy grid array to avoid reference issues
+    AppState.grid = JSON.parse(JSON.stringify(beat.grid));
+    
+    // Update genre buttons
+    document.querySelectorAll('.genre-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.genre === beat.genre);
+    });
+
+    // Re-render UI
+    generateGrid();
+    switchTab('create');
+    showToast(`Loaded "${beat.title}"`, 'success');
+}
+
+function populateSavedFeed() {
+    const feed = document.getElementById('saved-feed');
+    if (!feed) return;
+    feed.innerHTML = '';
+
+    if (AppState.savedBeats.length === 0) {
+        feed.innerHTML = '<div class="empty-state" style="text-align: center; padding: 2rem; color: var(--text-muted); grid-column: 1 / -1;">No saved creations yet. Go to Create to make some beats!</div>';
+        return;
+    }
+
+    const reversed = [...AppState.savedBeats].reverse();
+    reversed.forEach(beat => {
+        const card = createBeatCard(beat, true);
+        feed.appendChild(card);
+    });
+}
+
+function createBeatCard(beat, isSaved = false) {
     const card = document.createElement('div');
     card.className = 'beat-card';
     card.dataset.mood = beat.mood;
     card.dataset.genre = beat.genre;
 
     const isLiked = AppState.likedBeats.has(beat.id);
+    const isFollowing = AppState.followedArtists.has(beat.author);
 
     card.innerHTML = `
         <div class="beat-visualizer">
@@ -744,6 +829,12 @@ function createBeatCard(beat) {
                     <div class="beat-title">${beat.title}</div>
                     <div class="beat-author">@${beat.author}</div>
                 </div>
+                ${!isSaved && beat.author !== 'You' ? `
+                <button class="btn-follow ${isFollowing ? 'following' : ''}" data-follow-author="${beat.author}" onclick="followArtist('${beat.author}')">
+                    <i class="fas fa-${isFollowing ? 'user-check' : 'user-plus'}"></i>
+                    ${isFollowing ? 'Following' : 'Follow'}
+                </button>
+                ` : ''}
             </div>
             <div class="beat-actions">
                 <button class="beat-action-btn ${isLiked ? 'active' : ''}" onclick="likeBeat(${beat.id})">
@@ -755,9 +846,11 @@ function createBeatCard(beat) {
                 <button class="beat-action-btn" onclick="reactToBeat(${beat.id}, 'headphones')">
                     <i class="fas fa-headphones"></i>
                 </button>
-                <button class="remix-btn" onclick="remixBeat(${beat.id})">
-                    <i class="fas fa-code-branch"></i> Remix
+                ${isSaved ? `
+                <button class="remix-btn" style="margin-left: auto; border: 2px solid var(--text-dark); background: transparent; color: var(--text-dark); font-weight: bold; border-radius: var(--radius-full); padding: 0.25rem 0.75rem;" onclick="loadProject(${beat.id})">
+                    <i class="fas fa-folder-open"></i> Load
                 </button>
+                ` : ''}
             </div>
         </div>
     `;
@@ -1069,7 +1162,63 @@ function saveBeat() {
 }
 
 function updateProfileStats() {
-    document.querySelector('.stat-value').textContent = AppState.savedBeats.length;
+    const statValues = document.querySelectorAll('.stat-value');
+    if (statValues[0]) statValues[0].textContent = AppState.savedBeats.length;
+    if (statValues[1]) statValues[1].textContent = AppState.likedBeats.size;
+    if (statValues[2]) statValues[2].textContent = AppState.followedArtists.size;
+    if (statValues[3]) statValues[3].textContent = Math.floor(AppState.followedArtists.size * 1.4 + 3); // simulated followers
+    populateFollowingList();
+}
+
+function followArtist(author) {
+    const btn = document.querySelector(`[data-follow-author="${author}"]`);
+    if (AppState.followedArtists.has(author)) {
+        AppState.followedArtists.delete(author);
+        if (btn) {
+            btn.innerHTML = '<i class="fas fa-user-plus"></i> Follow';
+            btn.classList.remove('following');
+        }
+        showToast(`Unfollowed @${author}`, 'info');
+    } else {
+        AppState.followedArtists.add(author);
+        if (btn) {
+            btn.innerHTML = '<i class="fas fa-user-check"></i> Following';
+            btn.classList.add('following');
+        }
+        showToast(`Now following @${author}!`, 'success');
+    }
+    // Update all follow buttons for this author across the feed
+    document.querySelectorAll(`[data-follow-author="${author}"]`).forEach(b => {
+        const isFollowing = AppState.followedArtists.has(author);
+        b.innerHTML = isFollowing ? '<i class="fas fa-user-check"></i> Following' : '<i class="fas fa-user-plus"></i> Follow';
+        b.classList.toggle('following', isFollowing);
+    });
+    updateProfileStats();
+}
+
+function populateFollowingList() {
+    const list = document.getElementById('following-list');
+    if (!list) return;
+    list.innerHTML = '';
+    if (AppState.followedArtists.size === 0) {
+        list.innerHTML = '<p class="following-empty">You haven\'t followed anyone yet. Discover artists!</p>';
+        return;
+    }
+    AppState.followedArtists.forEach(author => {
+        const item = document.createElement('div');
+        item.className = 'following-item';
+        item.innerHTML = `
+            <div class="following-avatar"><i class="fas fa-user"></i></div>
+            <div class="following-info">
+                <span class="following-name">@${author}</span>
+                <span class="following-label">Artist</span>
+            </div>
+            <button class="btn-follow following" data-follow-author="${author}" onclick="followArtist('${author}')">
+                <i class="fas fa-user-check"></i> Following
+            </button>
+        `;
+        list.appendChild(item);
+    });
 }
 
 function loadSavedState() {
@@ -1086,10 +1235,23 @@ function loadSavedState() {
 function showToast(message, type = 'info') {
     const container = document.getElementById('toast-container');
 
+    // Keep the stack tidy — never show more than 3 at once.
+    const existing = container.querySelectorAll('.toast');
+    for (let i = 0; i <= existing.length - 3; i++) {
+        existing[i].remove();
+    }
+
+    const icons = {
+        success: 'fa-check-circle',
+        error: 'fa-exclamation-circle',
+        info: 'fa-info-circle'
+    };
+
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
+    toast.setAttribute('role', 'status');
     toast.innerHTML = `
-        <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-info-circle'}"></i>
+        <i class="fas ${icons[type] || icons.info}"></i>
         <span>${message}</span>
     `;
 
@@ -2008,7 +2170,7 @@ function changeInstrument(instrument) {
         oscillator: config.oscillator,
         envelope: config.envelope,
         volume: -5
-    }).toDestination();
+    }).connect(masterBus || Tone.Destination);
 }
 
 function playPianoNote(note) {
@@ -2180,6 +2342,21 @@ const activeKeyboardNotes = new Set();
 
 document.addEventListener('keydown', (e) => {
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+
+    // Undo / Redo (Ctrl/Cmd+Z, Ctrl/Cmd+Shift+Z or Ctrl+Y)
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        if (e.shiftKey) redo(); else undo();
+        return;
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
+        e.preventDefault();
+        redo();
+        return;
+    }
+
+    // Don't trigger transport/instrument shortcuts while holding a modifier
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
 
     // Space bar for play/pause
     if (e.code === 'Space') {
@@ -2353,7 +2530,7 @@ function updateFxUI() {
     setVal('distortion-mix', ctx.settings.distortion.mix, '%');
     
     setVal('chorus-rate', ctx.settings.chorus.rate, 'Hz');
-    setVal('chorus-depth', Math.round(ctx.settings.chorus.depth * 100), '%');
+    setVal('chorus-depth', Math.round(ctx.settings.chorus.depth), '%');
     setVal('chorus-mix', ctx.settings.chorus.mix, '%');
 }
 
@@ -2513,7 +2690,8 @@ function initEffects() {
             const val = parseInt(e.target.value);
             chorusDepthVal.textContent = val + '%';
             const ctx = getCurrentFxContext();
-            ctx.settings.chorus.depth = val / 100;
+            // Store 0-100 (same convention as every other FX param); the node wants 0-1.
+            ctx.settings.chorus.depth = val;
             if (AppState.audioContextStarted && fxNodes.chorus && (ctx.isGlobal || !ArrangementState.isPlayingSong)) {
                 fxNodes.chorus.depth = val / 100;
             }
@@ -2560,6 +2738,8 @@ function ensureFxNodes() {
         depth: AppState.fxSettings.chorus.depth / 100,
         wet: AppState.fxSettings.chorus.mix / 100
     });
+    // Chorus needs its LFO started or the modulation never runs.
+    fxNodes.chorus.start();
 }
 
 function applyFxStateToNodes(settings, active, time) {
@@ -2590,7 +2770,7 @@ function rebuildEffectsChain() {
         const s = synths[key];
         if (!s) return;
         s.disconnect();
-        s.chain(...chainNodes, Tone.Destination);
+        s.chain(...chainNodes, masterBus || Tone.Destination);
     });
 
     applyFxStateToNodes(AppState.fxSettings, AppState.fxActive, Tone.now());
@@ -2620,7 +2800,7 @@ function initMetronome() {
                 octaves: 6,
                 oscillator: { type: 'sine' },
                 envelope: { attack: 0.001, decay: 0.05, sustain: 0, release: 0.1 }
-            }).toDestination();
+            }).connect(masterBus || Tone.Destination);
             metronomeSynth.volume.value = -12;
         }
 
@@ -3461,6 +3641,22 @@ let masterMeter = null;
 let limiterEnabled = false;
 let meterAnimId = null;
 
+// Rebuild master bus → [compressor] → [limiter] → speakers.
+// Inserting these on the master bus (not after Tone.Destination) is what makes
+// them actually process the audio.
+function rebuildMasterChain() {
+    if (!masterBus || !AppState.audioContextStarted) return;
+    masterBus.disconnect();
+    const nodes = [];
+    if (masterCompressor) nodes.push(masterCompressor);
+    if (masterLimiter && limiterEnabled) nodes.push(masterLimiter);
+    if (nodes.length) {
+        masterBus.chain(...nodes, Tone.Destination);
+    } else {
+        masterBus.connect(Tone.Destination);
+    }
+}
+
 function initMasterOutput() {
     const volSlider = document.getElementById('master-volume');
     const compSlider = document.getElementById('master-compressor');
@@ -3474,16 +3670,23 @@ function initMasterOutput() {
 
     if (compSlider) compSlider.addEventListener('input', (e) => {
         const val = parseInt(e.target.value);
-        if (val > 0 && AppState.audioContextStarted) {
+        const valEl = document.getElementById('master-comp-val');
+        if (val > 0) {
+            if (!AppState.audioContextStarted) { valEl.textContent = val + '%'; return; }
             if (!masterCompressor) {
                 masterCompressor = new Tone.Compressor({ threshold: -24, ratio: 4, attack: 0.003, release: 0.25 });
-                Tone.Destination.chain(masterCompressor);
+                rebuildMasterChain();
             }
             masterCompressor.threshold.value = -10 - (val * 0.3);
             masterCompressor.ratio.value = 1 + (val / 100) * 11;
-            document.getElementById('master-comp-val').textContent = val + '%';
+            valEl.textContent = val + '%';
         } else {
-            document.getElementById('master-comp-val').textContent = 'Off';
+            // Ratio 1 / threshold 0 = transparent, so the node stays wired but does nothing.
+            if (masterCompressor) {
+                masterCompressor.ratio.value = 1;
+                masterCompressor.threshold.value = 0;
+            }
+            valEl.textContent = 'Off';
         }
     });
 
@@ -3491,12 +3694,10 @@ function initMasterOutput() {
         limiterEnabled = !limiterEnabled;
         limiterBtn.classList.toggle('active', limiterEnabled);
         limiterBtn.textContent = limiterEnabled ? 'ON' : 'OFF';
-        if (limiterEnabled && AppState.audioContextStarted) {
-            if (!masterLimiter) {
-                masterLimiter = new Tone.Limiter(-3);
-                Tone.Destination.chain(masterLimiter);
-            }
+        if (limiterEnabled && AppState.audioContextStarted && !masterLimiter) {
+            masterLimiter = new Tone.Limiter(-3);
         }
+        rebuildMasterChain();
         showToast(limiterEnabled ? '🔊 Limiter ON' : 'Limiter OFF', 'success');
     });
 
@@ -3911,8 +4112,9 @@ async function toggleSongPlayback() {
                     const voiceId = clip.patternId.replace('VOICE_', '');
                     const voiceBuffer = arrangeVoiceBuffers[voiceId];
                     if (stepInBar === 0 && voiceBuffer && voiceBuffer.loaded) {
-                        const voicePlayer = new Tone.Player(voiceBuffer).toDestination();
-                        // Optional: route through FX chain if we had a dedicated voice fx node
+                        const voicePlayer = new Tone.Player(voiceBuffer).connect(masterBus || Tone.Destination);
+                        // Free the node once it finishes so long songs don't leak players.
+                        voicePlayer.onstop = () => voicePlayer.dispose();
                         voicePlayer.start(time);
                     }
                     return;
