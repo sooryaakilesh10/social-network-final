@@ -914,18 +914,21 @@ function shareSavedBeat(id) {
 
 function populateSavedFeed() {
     const feed = document.getElementById('saved-feed');
-    if (!feed) return;
-    feed.innerHTML = '';
+    const myBeatsFeed = document.getElementById('my-beats');
+    
+    if (feed) feed.innerHTML = '';
+    if (myBeatsFeed) myBeatsFeed.innerHTML = '';
 
     if (AppState.savedBeats.length === 0) {
-        feed.innerHTML = '<div class="empty-state" style="text-align: center; padding: 2rem; color: var(--text-muted); grid-column: 1 / -1;">No saved creations yet. Go to Create to make some beats!</div>';
+        if (feed) feed.innerHTML = '<div class="empty-state" style="text-align: center; padding: 2rem; color: var(--text-muted); grid-column: 1 / -1;">No saved creations yet. Go to Create to make some beats!</div>';
+        if (myBeatsFeed) myBeatsFeed.innerHTML = '<div class="empty-state" style="text-align: center; padding: 2rem; color: var(--text-muted); grid-column: 1 / -1;"><i class="fas fa-music"></i><p>No beats yet. Start creating!</p></div>';
         return;
     }
 
     const reversed = [...AppState.savedBeats].reverse();
     reversed.forEach(beat => {
-        const card = createBeatCard(beat, true);
-        feed.appendChild(card);
+        if (feed) feed.appendChild(createBeatCard(beat, true));
+        if (myBeatsFeed) myBeatsFeed.appendChild(createBeatCard(beat, true));
     });
 }
 
