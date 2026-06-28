@@ -81,6 +81,10 @@
       }
       LF.updateAuthUI();
 
+      // Seed which artists the viewer already follows BEFORE rendering the
+      // feed, so follow buttons render in the right state after a refresh.
+      if (LF.user) await LF.loadFollowing();
+
       // Discover feed — personalized "For You" ranking by default.
       await LF.loadDiscover(AppState.discoverMode || "foryou");
 
@@ -122,6 +126,7 @@
         try { await api.auth.logout(); } catch (e) {}
         LF.user = null;
         AppState.savedBeats = [];
+        AppState.followedArtists.clear();
         LF.updateAuthUI();
         var suggested = document.getElementById("suggested-creators");
         if (suggested) suggested.style.display = "none";
@@ -192,6 +197,28 @@
           + '</div>';
       }).join("");
       el.innerHTML = '<div class="suggest-title">Suggested creators</div><div class="suggest-row">' + cards + '</div>';
+    },
+
+    // Seed AppState.followedArtists (and authorIndex, for later unfollows) from
+    // the server so follow state survives a page refresh. Paginates through all
+    // followed users.
+    loadFollowing: async function () {
+      if (!LF.user) return;
+      try {
+        var cursor = null;
+        do {
+          var page = await api.me.following(cursor);
+          var items = (page && page.items) || [];
+          items.forEach(function (u) {
+            if (u && u.username) {
+              AppState.followedArtists.add(u.username);
+              if (u.id) LF.authorIndex[u.username] = u.id;
+            }
+          });
+          cursor = page && page.nextCursor;
+        } while (cursor);
+      } catch (e) { /* keep whatever state we have */ }
+      if (typeof populateFollowingList === "function") populateFollowingList();
     },
 
     refreshMine: async function () {
