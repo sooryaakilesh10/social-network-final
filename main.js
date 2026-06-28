@@ -1895,6 +1895,35 @@ const instrumentConfigs = {
     }
 };
 
+// Real instruments from open-source sample libraries, played via Tone.Sampler
+// (multisampled — Tone pitch-shifts between the provided notes):
+//   - Salamander Grand Piano (CC-BY), hosted on the official Tone.js CDN.
+//   - tonejs-instruments (VSCO2 / CC0), hosted on nbrosowsky.github.io.
+// Only a few sample points per instrument are listed to keep downloads small.
+const TONEJS_SAMPLES = 'https://nbrosowsky.github.io/tonejs-instruments/samples/';
+const sampledInstrumentConfigs = {
+    'grand-piano':     { name: 'Grand Piano',     baseUrl: 'https://tonejs.github.io/audio/salamander/', notes: ['C2', 'C3', 'A3', 'C4', 'D#4', 'F#4', 'C5'] },
+    'acoustic-guitar': { name: 'Acoustic Guitar', baseUrl: TONEJS_SAMPLES + 'guitar-acoustic/',          notes: ['C3', 'A3', 'C4', 'A4', 'C5'] },
+    'electric-bass':   { name: 'Electric Bass',   baseUrl: TONEJS_SAMPLES + 'bass-electric/',             notes: ['E1', 'C#2', 'E2', 'C#3', 'E3'] },
+    'cello':           { name: 'Cello',           baseUrl: TONEJS_SAMPLES + 'cello/',                     notes: ['C2', 'A2', 'C3', 'A3', 'C4'] },
+    'violin':          { name: 'Violin',          baseUrl: TONEJS_SAMPLES + 'violin/',                    notes: ['C4', 'A4', 'C5', 'A5'] },
+    'concert-flute':   { name: 'Flute',           baseUrl: TONEJS_SAMPLES + 'flute/',                     notes: ['C4', 'A4', 'C5', 'A5'] },
+    'pipe-organ':      { name: 'Pipe Organ',      baseUrl: TONEJS_SAMPLES + 'organ/',                     notes: ['C3', 'C4', 'A4', 'C5'] },
+    'xylophone':       { name: 'Xylophone',       baseUrl: TONEJS_SAMPLES + 'xylophone/',                 notes: ['G4', 'C5', 'G5', 'C6', 'G6', 'C7'] }
+};
+
+// Cache of loaded Tone.Sampler instances, keyed by instrument, so switching
+// back to an instrument doesn't re-download its samples.
+const sampledInstruments = {};
+
+// Build a Tone.Sampler urls map from note names. Sharps map to filenames using
+// 's' (e.g. "F#4" -> "Fs4.mp3"), matching both sample libraries' conventions.
+function buildSampleUrls(notes) {
+    const urls = {};
+    notes.forEach(n => { urls[n] = n.replace('#', 's') + '.mp3'; });
+    return urls;
+}
+
 const pianoNotes = [
     { note: 'C5', type: 'white', label: 'C5' },
     { note: 'B4', type: 'white', label: 'B4' },
@@ -2562,19 +2591,56 @@ function highlightPianoPlayingStep(step) {
     });
 }
 
+// Swap the active piano instrument. Disposes the outgoing voice unless it's a
+// cached sampler (those are kept around for instant reuse).
+function setPianoInstrument(inst) {
+    if (pianoSynth && pianoSynth !== inst) {
+        const isCached = Object.values(sampledInstruments).indexOf(pianoSynth) !== -1;
+        if (!isCached) pianoSynth.dispose();
+    }
+    pianoSynth = inst;
+    applyPianoVolume();
+}
+
 function changeInstrument(instrument) {
     currentInstrument = instrument;
-    const config = instrumentConfigs[instrument];
 
-    if (pianoSynth) {
-        pianoSynth.dispose();
+    const sampleCfg = sampledInstrumentConfigs[instrument];
+    if (sampleCfg) {
+        // Already loaded? Switch instantly.
+        if (sampledInstruments[instrument]) {
+            setPianoInstrument(sampledInstruments[instrument]);
+            return;
+        }
+        // Load the multisampled instrument; keep the current voice until ready.
+        if (typeof showToast === 'function') showToast(`Loading ${sampleCfg.name}…`, 'info');
+        const sampler = new Tone.Sampler({
+            urls: buildSampleUrls(sampleCfg.notes),
+            baseUrl: sampleCfg.baseUrl,
+            release: 1,
+            volume: pianoVolume,
+            onload: () => {
+                sampledInstruments[instrument] = sampler;
+                // Only switch if the user hasn't picked something else meanwhile.
+                if (currentInstrument === instrument) {
+                    setPianoInstrument(sampler);
+                    if (typeof showToast === 'function') showToast(`${sampleCfg.name} ready`, 'success');
+                }
+            },
+            onerror: () => {
+                if (typeof showToast === 'function') showToast(`Couldn't load ${sampleCfg.name} samples`, 'error');
+            }
+        }).connect(masterBus || Tone.Destination);
+        return;
     }
 
-    pianoSynth = new Tone.PolySynth(Tone.Synth, {
+    // Built-in Tone.js synth voice.
+    const config = instrumentConfigs[instrument] || instrumentConfigs.piano;
+    setPianoInstrument(new Tone.PolySynth(Tone.Synth, {
         oscillator: config.oscillator,
         envelope: config.envelope,
         volume: pianoVolume
-    }).connect(masterBus || Tone.Destination);
+    }).connect(masterBus || Tone.Destination));
 }
 
 function playPianoNote(note) {

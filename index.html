@@ -161,12 +161,24 @@
                     <h3><i class="fas fa-keyboard"></i> Piano Roll</h3>
                     <div class="piano-header-controls">
                         <select id="instrument-select" class="instrument-select">
-                            <option value="piano">Grand Piano</option>
-                            <option value="synth">Synth Lead</option>
-                            <option value="bass">Bass Guitar</option>
-                            <option value="strings">Strings</option>
-                            <option value="organ">Organ</option>
-                            <option value="flute">Flute</option>
+                            <optgroup label="Real Instruments (samples)">
+                                <option value="grand-piano">Grand Piano</option>
+                                <option value="acoustic-guitar">Acoustic Guitar</option>
+                                <option value="electric-bass">Electric Bass</option>
+                                <option value="cello">Cello</option>
+                                <option value="violin">Violin</option>
+                                <option value="concert-flute">Flute</option>
+                                <option value="pipe-organ">Pipe Organ</option>
+                                <option value="xylophone">Xylophone</option>
+                            </optgroup>
+                            <optgroup label="Synth (Tone.js)">
+                                <option value="piano" selected>Synth Piano</option>
+                                <option value="synth">Synth Lead</option>
+                                <option value="bass">Synth Bass</option>
+                                <option value="strings">Strings</option>
+                                <option value="organ">Synth Organ</option>
+                                <option value="flute">Synth Flute</option>
+                            </optgroup>
                         </select>
                         <button id="scale-lock-btn" class="btn-tool btn-scale-lock" title="Lock to Scale">
                             <i class="fas fa-lock-open"></i>
