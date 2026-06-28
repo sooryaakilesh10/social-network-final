@@ -1459,10 +1459,28 @@ function saveBeat() {
 
 function updateProfileStats() {
     const statValues = document.querySelectorAll('.stat-value');
-    if (statValues[0]) statValues[0].textContent = AppState.savedBeats.length;
-    if (statValues[1]) statValues[1].textContent = AppState.likedBeats.size;
-    if (statValues[2]) statValues[2].textContent = AppState.followedArtists.size;
-    if (statValues[3]) statValues[3].textContent = Math.floor(AppState.followedArtists.size * 1.4 + 3); // simulated followers
+    const signedIn = !!(window.LF && LF.user);
+
+    let beats, likes, following, followers;
+    if (signedIn) {
+        // Pull real counts from the backend (/api/me payload, DB-backed).
+        beats = LF.user.beatsCount || 0;
+        following = LF.user.followingCount || 0;
+        followers = LF.user.followersCount || 0;
+        // Likes received across the user's own beats.
+        likes = AppState.savedBeats.reduce((sum, b) => sum + (b.likes || 0), 0);
+    } else {
+        // Guest / offline: fall back to local state.
+        beats = AppState.savedBeats.length;
+        likes = AppState.likedBeats.size;
+        following = AppState.followedArtists.size;
+        followers = 0;
+    }
+
+    if (statValues[0]) statValues[0].textContent = beats;
+    if (statValues[1]) statValues[1].textContent = likes;
+    if (statValues[2]) statValues[2].textContent = following;
+    if (statValues[3]) statValues[3].textContent = followers;
     populateFollowingList();
 }
 
