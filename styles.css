@@ -6273,10 +6273,7 @@ body {
 
     /* Left column elements (column 1 only) */
     #create-tab .sequencer-scroll-wrapper,
-    #create-tab .mixer-strip,
-    #create-tab .controls-row,
-    #create-tab .fx-rack,
-    #create-tab .master-output-section,
+    #create-tab .piano-section,
     #create-tab .btn-share {
         grid-column: 1;
         min-width: 0;
