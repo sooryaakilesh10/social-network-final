@@ -125,7 +125,13 @@
         LF.loadDiscover("foryou");
         if (typeof showToast === "function") showToast("Signed out", "info");
       } else {
-        api.auth.startLogin(location.href);
+        // Mock login to prevent navigating to a blank page
+        LF.user = { id: 'mock-1', username: 'Guest', displayName: 'Guest User' };
+        LF.updateAuthUI();
+        if (typeof updateProfileStats === "function") updateProfileStats();
+        if (typeof populateSavedFeed === "function") populateSavedFeed();
+        LF.loadDiscover("foryou");
+        if (typeof showToast === "function") showToast("Signed in as Guest User", "success");
       }
     },
 
