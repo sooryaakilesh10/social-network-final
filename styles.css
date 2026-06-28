@@ -360,12 +360,18 @@ body {
 .project-name-input {
     background: transparent;
     border: none;
+    border-bottom: 2px dashed rgba(0,0,0,0.15);
     color: var(--text-dark);
     font-size: 1.4rem;
     font-weight: 700;
     width: 100%;
     outline: none;
     font-family: 'Outfit', sans-serif;
+    transition: border-bottom-color 0.2s ease;
+    padding-bottom: 2px;
+}
+.project-name-input:focus, .project-name-input:hover {
+    border-bottom: 2px solid var(--violet-pop);
 }
 
 .project-date {
