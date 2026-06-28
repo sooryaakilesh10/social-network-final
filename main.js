@@ -864,6 +864,17 @@ function saveProject() {
     showToast(msg, 'success');
 }
 
+function removeBeat(id) {
+    if (!confirm('Are you sure you want to remove this beat?')) return;
+    
+    AppState.savedBeats = AppState.savedBeats.filter(b => String(b.id) !== String(id));
+    localStorage.setItem('loopflow_beats', JSON.stringify(AppState.savedBeats));
+    
+    populateSavedFeed();
+    updateProfileStats();
+    showToast('Beat removed', 'info');
+}
+
 async function loadProject(id) {
     let beat = AppState.savedBeats.find(b => String(b.id) === String(id));
     if (!beat) return;
@@ -977,6 +988,9 @@ function createBeatCard(beat, isSaved = false) {
                 ${isSaved ? `
                 <button class="remix-btn" style="margin-left: auto; border: 2px solid var(--text-dark); background: transparent; color: var(--text-dark); font-weight: bold; border-radius: var(--radius-full); padding: 0.25rem 0.75rem;" onclick="loadProject('${beat.id}')">
                     <i class="fas fa-folder-open"></i> Load
+                </button>
+                <button class="remix-btn" style="border: 2px solid #ef4444; background: transparent; color: #ef4444; font-weight: bold; border-radius: var(--radius-full); padding: 0.25rem 0.75rem; margin-left: 0.5rem;" onclick="removeBeat('${beat.id}')">
+                    <i class="fas fa-trash"></i> Remove
                 </button>
                 ${beat.serverBeat ? `
                 <button class="remix-btn" style="border: 2px solid var(--text-dark); ${beat.visibility === 'public' ? 'background: var(--text-dark); color: #fff;' : 'background: transparent; color: var(--text-dark);'} font-weight: bold; border-radius: var(--radius-full); padding: 0.25rem 0.75rem;" onclick="shareSavedBeat('${beat.id}')" ${beat.visibility === 'public' ? 'disabled' : ''}>
