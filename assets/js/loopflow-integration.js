@@ -70,11 +70,22 @@
       if (feedTabs) feedTabs.style.display = "";   // For You / Following / Trending
       api.configure({ baseUrl: window.LOOPFLOW_API_BASE });
 
-      // Who am I? (cookie session). 401 simply means "logged out".
-      try {
-        LF.user = await api.me.get();
-      } catch (e) {
+      // Check local overrides first
+      if (localStorage.getItem('force_logged_out') === 'true') {
         LF.user = null;
+      } else if (localStorage.getItem('mock_user')) {
+        try {
+          LF.user = JSON.parse(localStorage.getItem('mock_user'));
+        } catch (e) {
+          LF.user = null;
+        }
+      } else {
+        // Who am I? (cookie session). 401 simply means "logged out".
+        try {
+          LF.user = await api.me.get();
+        } catch (e) {
+          LF.user = null;
+        }
       }
       LF.updateAuthUI();
 
@@ -116,6 +127,8 @@
       if (LF.user) {
         try { await api.auth.logout(); } catch (e) {}
         LF.user = null;
+        localStorage.removeItem('mock_user');
+        localStorage.setItem('force_logged_out', 'true');
         AppState.savedBeats = [];
         LF.updateAuthUI();
         var suggested = document.getElementById("suggested-creators");
@@ -127,6 +140,8 @@
       } else {
         // Mock login to prevent navigating to a blank page
         LF.user = { id: 'mock-1', username: 'Guest', displayName: 'Guest User' };
+        localStorage.setItem('mock_user', JSON.stringify(LF.user));
+        localStorage.removeItem('force_logged_out');
         LF.updateAuthUI();
         if (typeof updateProfileStats === "function") updateProfileStats();
         if (typeof populateSavedFeed === "function") populateSavedFeed();

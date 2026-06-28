@@ -626,6 +626,8 @@ function skipTutorial() {
 }
 
 function switchTab(tab) {
+    if (!tab) return;
+
     AppState.currentTab = tab;
 
     // Remember the active tab in the URL so a refresh stays on this page
