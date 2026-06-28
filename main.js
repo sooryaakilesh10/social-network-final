@@ -99,12 +99,12 @@ const MagicPatterns = {
 
 // Sample beats for discovery feed
 const SampleBeats = [
-    { id: 1, title: "Midnight Dreams", author: "BeatMaster_99", mood: "dark", likes: 1234, genre: "trap" },
-    { id: 2, title: "Summer Vibes", author: "LoFiGirl", mood: "euphoric", likes: 892, genre: "lofi" },
-    { id: 3, title: "Rainy Day", author: "ChillBeats", mood: "melancholic", likes: 567, genre: "ambient" },
-    { id: 4, title: "Night Drive", author: "SynthWave", mood: "energetic", likes: 2341, genre: "house" },
-    { id: 5, title: "Deep Focus", author: "StudyMusic", mood: "dark", likes: 445, genre: "ambient" },
-    { id: 6, title: "Party Starter", author: "DJFresh", mood: "energetic", likes: 3102, genre: "house" },
+    { id: 1, title: "Midnight Dreams", author: "BeatMaster_99", mood: "dark", likes: 1234, views: 5600, genre: "trap" },
+    { id: 2, title: "Summer Vibes", author: "LoFiGirl", mood: "euphoric", likes: 892, views: 3200, genre: "lofi" },
+    { id: 3, title: "Rainy Day", author: "ChillBeats", mood: "melancholic", likes: 567, views: 2100, genre: "ambient" },
+    { id: 4, title: "Night Drive", author: "SynthWave", mood: "energetic", likes: 2341, views: 8900, genre: "house" },
+    { id: 5, title: "Deep Focus", author: "StudyMusic", mood: "dark", likes: 445, views: 1500, genre: "ambient" },
+    { id: 6, title: "Party Starter", author: "DJFresh", mood: "energetic", likes: 3102, views: 12400, genre: "house" },
 ];
 
 // Stem packs for library
@@ -956,8 +956,11 @@ function createBeatCard(beat, isSaved = false) {
             </div>
             <div class="beat-actions">
                 <button class="beat-action-btn ${isLiked ? 'active' : ''}" onclick="likeBeat('${beat.id}')">
-                    <i class="fas fa-fire"></i> ${beat.likes}
+                    <i class="fas fa-heart"></i> ${beat.likes}
                 </button>
+                <div class="beat-action-btn" style="pointer-events: none; opacity: 0.8;">
+                    <i class="fas fa-eye"></i> ${beat.views || Math.floor((beat.likes || 0) * 3.5 + 100)}
+                </div>
                 <button class="beat-action-btn" onclick="reactToBeat('${beat.id}', 'mind')">
                     <i class="fas fa-brain"></i>
                 </button>
