@@ -187,14 +187,17 @@
       if (!users.length) { el.style.display = "none"; return; }
       el.style.display = "";
       var esc = function (s) { return String(s == null ? "" : s).replace(/[<>&"']/g, ""); };
-      var cards = users.map(function (u) {
+      // Top 5 as a vertical list.
+      var cards = users.slice(0, 5).map(function (u) {
         if (u && u.id && u.username) LF.authorIndex[u.username] = u.id;
         var name = esc(u.displayName || u.username);
         var handle = esc(u.username);
         return '<div class="suggest-card">'
           + '<div class="suggest-avatar"><i class="fas fa-user"></i></div>'
+          + '<div class="suggest-info">'
           + '<div class="suggest-name">' + name + '</div>'
           + '<div class="suggest-handle">@' + handle + '</div>'
+          + '</div>'
           + '<button class="suggest-follow" onclick="followSuggested(\'' + esc(u.id) + '\',\'' + handle + '\', this)">Follow</button>'
           + '</div>';
       }).join("");
