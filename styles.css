@@ -6737,6 +6737,7 @@ body {
         flex: 0 0 48px;
         width: 48px;
         height: 48px;
+        min-width: 48px;
         border-radius: 50%;
         padding: 0;
         justify-content: center;
