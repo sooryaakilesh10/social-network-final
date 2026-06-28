@@ -935,13 +935,43 @@ async function loadProject(id) {
     showToast(`Loaded "${beat.title}"`, 'success');
 }
 
-// Post an already-saved beat to the Discover feed (makes it public).
+// Post an already-saved beat to the Discover feed (makes it public). Opens a
+// modal to collect a title + description before publishing.
 function shareSavedBeat(id) {
     if (!(window.LF && LF.user)) {
         showToast('Sign in to post to Discover', 'info');
         return;
     }
-    LF.publishBeat(id);
+    const beat = AppState.savedBeats.find(b => String(b.id) === String(id));
+    AppState.pendingPostId = id;
+
+    const titleInput = document.getElementById('post-title');
+    const descInput = document.getElementById('post-description');
+    if (titleInput) titleInput.value = (beat && beat.title) || '';
+    if (descInput) descInput.value = (beat && beat.description) || '';
+
+    document.getElementById('post-modal').classList.remove('hidden');
+    if (titleInput) titleInput.focus();
+}
+
+function closePostModal() {
+    AppState.pendingPostId = null;
+    document.getElementById('post-modal').classList.add('hidden');
+}
+
+async function submitPost() {
+    const id = AppState.pendingPostId;
+    if (!id) return;
+
+    const title = document.getElementById('post-title').value.trim();
+    const description = document.getElementById('post-description').value.trim();
+    if (!title) {
+        showToast('Please add a title', 'info');
+        return;
+    }
+
+    const ok = await LF.publishBeat(id, { title, description });
+    if (ok) closePostModal();
 }
 
 function populateSavedFeed() {
@@ -975,7 +1005,7 @@ function createBeatCard(beat, isSaved = false) {
 
     card.innerHTML = `
         <div class="beat-visualizer">
-            <canvas id="visualizer-${beat.id}"></canvas>
+            <canvas></canvas>
             <div class="beat-play-overlay" onclick="playBeat('${beat.id}')">
                 <i class="fas fa-play"></i>
             </div>
@@ -1029,8 +1059,10 @@ function createBeatCard(beat, isSaved = false) {
         </div>
     `;
 
-    // Initialize visualizer for this beat
-    setTimeout(() => initVisualizer(`visualizer-${beat.id}`, beat.genre), 100);
+    // Initialize visualizer for this beat. Pass the element (ids aren't unique
+    // across feeds) — the loop self-sizes once the card is visible.
+    const visCanvas = card.querySelector('.beat-visualizer canvas');
+    if (visCanvas) initVisualizer(visCanvas, beat.genre);
 
     return card;
 }
@@ -1199,13 +1231,17 @@ function playBeat(id) {
 // ============================================
 // VISUALIZER
 // ============================================
-function initVisualizer(canvasId, genre) {
-    const canvas = document.getElementById(canvasId);
+// Accepts a <canvas> element (not an id): beat cards are rendered into more
+// than one feed, so ids aren't unique. The animation loop sizes itself lazily
+// every frame, so it works the same whether the card was visible at init time
+// or only became visible later (e.g. after switching tabs) — no refresh needed.
+function initVisualizer(canvas, genre) {
     if (!canvas) return;
 
+    // Cancel any prior loop bound to this canvas (re-render / re-init).
+    if (canvas._visRAF) cancelAnimationFrame(canvas._visRAF);
+
     const ctx = canvas.getContext('2d');
-    canvas.width = canvas.offsetWidth;
-    canvas.height = canvas.offsetHeight;
 
     const colors = {
         trap: ['#FACC15', '#14B8A6'],
@@ -1216,36 +1252,53 @@ function initVisualizer(canvasId, genre) {
 
     const [color1, color2] = colors[genre] || colors.trap;
 
-    let animationId;
-    let bars = [];
     const barCount = 20;
+    let bars = [];
+    let seeded = false;
 
-    for (let i = 0; i < barCount; i++) {
-        bars.push({
-            height: Math.random() * canvas.height * 0.5,
-            speed: 0.02 + Math.random() * 0.03
-        });
+    // Keep the canvas backing store in sync with its rendered size. Returns
+    // false while the canvas is hidden (0×0) so we just skip drawing that frame.
+    function ensureSize() {
+        const w = canvas.offsetWidth, h = canvas.offsetHeight;
+        if (w === 0 || h === 0) return false;
+        if (canvas.width !== w || canvas.height !== h) {
+            canvas.width = w;
+            canvas.height = h;
+        }
+        if (!seeded) {
+            bars = [];
+            for (let i = 0; i < barCount; i++) {
+                bars.push({
+                    height: Math.random() * canvas.height * 0.5,
+                    speed: 0.02 + Math.random() * 0.03
+                });
+            }
+            seeded = true;
+        }
+        return true;
     }
 
     function animate() {
-        ctx.fillStyle = 'rgba(10, 10, 15, 0.2)';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        if (ensureSize()) {
+            ctx.fillStyle = 'rgba(10, 10, 15, 0.2)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        const barWidth = canvas.width / barCount;
+            const barWidth = canvas.width / barCount;
 
-        bars.forEach((bar, i) => {
-            bar.height += Math.sin(Date.now() * bar.speed) * 2;
-            bar.height = Math.max(10, Math.min(canvas.height * 0.7, bar.height));
+            bars.forEach((bar, i) => {
+                bar.height += Math.sin(Date.now() * bar.speed) * 2;
+                bar.height = Math.max(10, Math.min(canvas.height * 0.7, bar.height));
 
-            const gradient = ctx.createLinearGradient(0, canvas.height, 0, canvas.height - bar.height);
-            gradient.addColorStop(0, color1);
-            gradient.addColorStop(1, color2);
+                const gradient = ctx.createLinearGradient(0, canvas.height, 0, canvas.height - bar.height);
+                gradient.addColorStop(0, color1);
+                gradient.addColorStop(1, color2);
 
-            ctx.fillStyle = gradient;
-            ctx.fillRect(i * barWidth + 2, canvas.height - bar.height, barWidth - 4, bar.height);
-        });
+                ctx.fillStyle = gradient;
+                ctx.fillRect(i * barWidth + 2, canvas.height - bar.height, barWidth - 4, bar.height);
+            });
+        }
 
-        animationId = requestAnimationFrame(animate);
+        canvas._visRAF = requestAnimationFrame(animate);
     }
 
     animate();

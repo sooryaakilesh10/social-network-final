@@ -33,6 +33,7 @@
         genre: v.genre,
         bpm: v.bpm,
         visibility: v.visibility || "private",
+        description: v.document ? (v.document.description || "") : "",
         grid: v.document ? v.document.grid : null,
         gridSteps: v.document ? v.document.gridSteps : null,
         serverBeat: true,
@@ -265,9 +266,22 @@
     },
 
     // Publish a specific already-saved beat (from the Saved tab) to Discover.
-    publishBeat: async function (id) {
+    // meta: { title, description } gathered from the Post modal. The backend
+    // has no description column, so it rides along inside the opaque document
+    // blob (merged into the beat's existing document).
+    publishBeat: async function (id, meta) {
+      meta = meta || {};
       try {
-        await api.beats.update(id, { visibility: "public" });
+        var patch = { visibility: "public" };
+        if (meta.title) patch.title = meta.title;
+        if (meta.description !== undefined) {
+          // Fetch the current document so we don't clobber the creative payload.
+          var current = await api.beats.get(id);
+          var doc = (current && current.document) || {};
+          doc.description = meta.description;
+          patch.document = doc;
+        }
+        await api.beats.update(id, patch);
         await LF.refreshMine();
         await LF.loadDiscover();
         if (typeof showToast === "function") showToast("Posted to Discover!", "success");

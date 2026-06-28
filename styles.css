@@ -1402,7 +1402,8 @@ body {
     font-family: 'Outfit', sans-serif;
 }
 
-.form-group input {
+.form-group input,
+.form-group textarea {
     width: 100%;
     background: var(--bg);
     border: 1px solid var(--glass-border);
@@ -1412,6 +1413,11 @@ body {
     font-size: 1.1rem;
     outline: none;
     font-family: 'Outfit', sans-serif;
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 80px;
 }
 
 .duet-toggle {
