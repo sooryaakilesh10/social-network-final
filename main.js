@@ -19,6 +19,7 @@ const AppState = {
     savedBeats: [],
     currentBeatId: null, // server id of the beat currently in the editor (for Share)
     discoverBeats: null, // backend-loaded public feed; null = use SampleBeats
+    backendReady: false, // true once LF.bootstrap() has resolved (gates feed render)
     discoverMode: 'foryou', // foryou | following | top
     likedBeats: new Set(),
     followedArtists: new Set(),
@@ -384,7 +385,19 @@ function init() {
     // Connect to the backend (auth + server persistence + live feed).
     // No-op in offline mode (LOOPFLOW_API_BASE not set).
     if (window.LF) {
-        LF.bootstrap().catch(function (e) { console.warn('LoopFlow backend bootstrap failed', e); });
+        LF.bootstrap()
+            .catch(function (e) { console.warn('LoopFlow backend bootstrap failed', e); })
+            .finally(function () {
+                // Bootstrap done (or failed) — render the real feeds and drop the
+                // loading placeholders. Covers guests, whose saved feed (localStorage)
+                // isn't touched by bootstrap's signed-in-only refresh.
+                AppState.backendReady = true;
+                populateDiscoveryFeed();
+                populateSavedFeed();
+            });
+    } else {
+        // No backend wired up at all → samples/local are the source of truth.
+        AppState.backendReady = true;
     }
 }
 
@@ -818,6 +831,13 @@ function populateDiscoveryFeed() {
         return;
     }
 
+    // Backend on but feed not fetched yet → loading state, NOT the sample posts.
+    // (Avoids a ~1s flash of built-in samples before bootstrap replaces them.)
+    if (window.LF && LF.enabled) {
+        feed.innerHTML = '<div class="empty-state" style="text-align:center; padding:2rem; color: var(--text-muted); grid-column: 1 / -1;"><i class="fas fa-spinner fa-spin"></i> Loading feed…</div>';
+        return;
+    }
+
     // Offline / backend not configured → built-in samples so the page isn't empty.
     SampleBeats.filter(beat => !(window.LF && LF.user && (beat.author === LF.user.username || beat.author === 'You')))
         .forEach(beat => feed.appendChild(createBeatCard(beat)));
@@ -985,6 +1005,16 @@ function populateSavedFeed() {
     
     if (feed) feed.innerHTML = '';
     if (myBeatsFeed) myBeatsFeed.innerHTML = '';
+
+    // Backend on but not bootstrapped yet → loading, not the localStorage beats.
+    // (A signed-in user's server beats replace them once bootstrap resolves;
+    // showing the local copies first causes a ~1s flash of the wrong posts.)
+    if (window.LF && LF.enabled && !AppState.backendReady) {
+        const loading = '<div class="empty-state" style="text-align:center; padding:2rem; color: var(--text-muted); grid-column: 1 / -1;"><i class="fas fa-spinner fa-spin"></i> Loading…</div>';
+        if (feed) feed.innerHTML = loading;
+        if (myBeatsFeed) myBeatsFeed.innerHTML = loading;
+        return;
+    }
 
     if (AppState.savedBeats.length === 0) {
         if (feed) feed.innerHTML = '<div class="empty-state" style="text-align: center; padding: 2rem; color: var(--text-muted); grid-column: 1 / -1;">No saved creations yet. Go to Create to make some beats!</div>';
