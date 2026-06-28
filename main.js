@@ -2810,8 +2810,16 @@ const keyboardMap = {
 
 const activeKeyboardNotes = new Set();
 
+// True while the user is typing in a form field, so global shortcuts (space =
+// play, letters = piano keys) don't fire — e.g. the post description textarea.
+function isTypingTarget(el) {
+    if (!el) return false;
+    const tag = el.tagName;
+    return tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA' || el.isContentEditable;
+}
+
 document.addEventListener('keydown', (e) => {
-    if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+    if (isTypingTarget(e.target)) return;
 
     // Undo / Redo (Ctrl/Cmd+Z, Ctrl/Cmd+Shift+Z or Ctrl+Y)
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
@@ -2844,6 +2852,7 @@ document.addEventListener('keydown', (e) => {
 });
 
 document.addEventListener('keyup', (e) => {
+    if (isTypingTarget(e.target)) return;
     const note = keyboardMap[e.key.toLowerCase()];
     if (note) {
         activeKeyboardNotes.delete(note);
