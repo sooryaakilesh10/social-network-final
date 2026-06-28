@@ -1063,18 +1063,15 @@ function createBeatCard(beat, isSaved = false) {
                     <i class="fas fa-heart"></i> ${beat.likes}
                 </button>
                 ${beat.serverBeat ? `
-                <button class="beat-action-btn" data-comment-count="${beat.id}" onclick="toggleComments('${beat.id}')">
+                <button class="beat-action-btn" data-comment-count="${beat.id}" onclick="openPostDetail('${beat.id}')">
                     <i class="fas fa-comment"></i> ${beat.comments || 0}
                 </button>
                 ` : ''}
                 <div class="beat-action-btn" style="pointer-events: none; opacity: 0.8;">
-                    <i class="fas fa-eye"></i> ${beat.views || Math.floor((beat.likes || 0) * 3.5 + 100)}
+                    <i class="fas fa-eye"></i> ${beatViewCount(beat)}
                 </div>
                 <button class="beat-action-btn" onclick="reactToBeat('${beat.id}', 'mind')">
                     <i class="fas fa-brain"></i>
-                </button>
-                <button class="beat-action-btn" onclick="reactToBeat('${beat.id}', 'headphones')">
-                    <i class="fas fa-headphones"></i>
                 </button>
                 ${isSaved ? `
                 <button class="remix-btn" style="margin-left: auto; border: 2px solid var(--text-dark); background: transparent; color: var(--text-dark); font-weight: bold; border-radius: var(--radius-full); padding: 0.25rem 0.75rem;" onclick="loadProject('${beat.id}')">
@@ -1090,7 +1087,6 @@ function createBeatCard(beat, isSaved = false) {
                 ` : ''}
                 ` : ''}
             </div>
-            ${beat.serverBeat ? `<div class="beat-comments" id="comments-${beat.id}" style="display:none;"></div>` : ''}
         </div>
     `;
 
@@ -1099,7 +1095,21 @@ function createBeatCard(beat, isSaved = false) {
     const visCanvas = card.querySelector('.beat-visualizer canvas');
     if (visCanvas) initVisualizer(visCanvas, beat.genre);
 
+    // Clicking the card body (not a button or the play overlay) opens the
+    // single-post detail view, Twitter-style.
+    card.addEventListener('click', (e) => {
+        if (e.target.closest('button, input, a, .beat-play-overlay')) return;
+        openPostDetail(beat.id);
+    });
+
     return card;
+}
+
+// Real play count for server beats; a deterministic placeholder for the
+// built-in sample/offline beats so the demo feed isn't all zeros.
+function beatViewCount(beat) {
+    if (beat.serverBeat) return beat.views || 0;
+    return beat.views != null ? beat.views : Math.floor((beat.likes || 0) * 3.5 + 100);
 }
 
 function filterByMood(mood) {
@@ -1241,6 +1251,85 @@ async function deleteComment(commentId, beatId) {
     bumpCommentCount(beatId, -1);
     const items = await LF.loadComments(beatId);
     renderComments(beatId, items);
+}
+
+// ---- single-post detail view (Twitter-style) --------------------------------
+function findBeatById(id) {
+    const key = String(id);
+    for (const pool of [AppState.discoverBeats, AppState.savedBeats]) {
+        const found = (pool || []).find(b => String(b.id) === key);
+        if (found) return found;
+    }
+    return null;
+}
+
+function openPostDetail(id) {
+    const beat = findBeatById(id);
+    if (!beat) return;
+    const body = document.getElementById('post-detail-body');
+    if (!body) return;
+
+    const isLiked = AppState.likedBeats.has(String(beat.id));
+    const desc = beat.description || '';
+
+    body.innerHTML = `
+        <div class="beat-card post-detail-card">
+            <div class="beat-visualizer">
+                <canvas></canvas>
+                <div class="beat-play-overlay" data-play-beat="${beat.id}" onclick="playBeat('${beat.id}')">
+                    <i class="fas fa-play"></i>
+                </div>
+            </div>
+            <div class="beat-info">
+                <div class="beat-title" style="font-size:1.25rem;">${escapeComment(beat.title)}</div>
+                <div class="beat-author">@${escapeComment(beat.author)}</div>
+                <p id="post-detail-desc" class="post-detail-desc" style="${desc ? '' : 'display:none;'}">${escapeComment(desc)}</p>
+                <div class="beat-actions" style="margin-top:0.75rem;">
+                    <button class="beat-action-btn ${isLiked ? 'active' : ''}" onclick="likeBeat('${beat.id}')">
+                        <i class="fas fa-heart"></i> ${beat.likes || 0}
+                    </button>
+                    <div class="beat-action-btn" data-comment-count="${beat.id}" style="pointer-events:none;">
+                        <i class="fas fa-comment"></i> ${beat.comments || 0}
+                    </div>
+                    <div class="beat-action-btn" style="pointer-events:none;">
+                        <i class="fas fa-eye"></i> ${beatViewCount(beat)}
+                    </div>
+                </div>
+                ${beat.serverBeat
+                    ? `<div class="beat-comments" id="comments-${beat.id}" style="display:block;"></div>`
+                    : `<div style="color:var(--text-muted); font-size:0.85rem; padding-top:0.75rem;">Comments are available once this beat is posted.</div>`}
+            </div>
+        </div>
+    `;
+
+    const cv = body.querySelector('.beat-visualizer canvas');
+    if (cv) initVisualizer(cv, beat.genre);
+
+    document.getElementById('post-detail-modal').classList.remove('hidden');
+
+    if (beat.serverBeat) loadPostDetailExtras(beat);
+}
+
+async function loadPostDetailExtras(beat) {
+    // Description is omitted from feed/list payloads — fetch the full beat if needed.
+    if (!beat.description && window.LF && LF.openBeat) {
+        const full = await LF.openBeat(beat.id);
+        if (full && full.description) {
+            beat.description = full.description;
+            const d = document.getElementById('post-detail-desc');
+            if (d) { d.textContent = full.description; d.style.display = ''; }
+        }
+    }
+    // Load the comment thread.
+    const panel = document.getElementById('comments-' + beat.id);
+    if (panel) panel.innerHTML = '<div style="color: var(--text-muted); padding: 0.5rem 0; font-size: 0.85rem;">Loading comments…</div>';
+    const items = (window.LF && LF.loadComments) ? await LF.loadComments(beat.id) : [];
+    renderComments(beat.id, items);
+}
+
+function closePostDetail() {
+    const modal = document.getElementById('post-detail-modal');
+    if (modal) modal.classList.add('hidden');
 }
 
 function remixBeat(id) {

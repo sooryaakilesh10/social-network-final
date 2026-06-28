@@ -30,6 +30,7 @@
         mood: v.mood || "custom",
         likes: v.likesCount || 0,
         comments: v.commentsCount || 0,
+        views: v.playsCount || 0,
         genre: v.genre,
         bpm: v.bpm,
         visibility: v.visibility || "private",
