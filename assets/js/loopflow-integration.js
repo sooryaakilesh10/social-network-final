@@ -70,22 +70,12 @@
       if (feedTabs) feedTabs.style.display = "";   // For You / Following / Trending
       api.configure({ baseUrl: window.LOOPFLOW_API_BASE });
 
-      // Check local overrides first
-      if (localStorage.getItem('force_logged_out') === 'true') {
+      // Who am I? (cookie session). The API client transparently refreshes the
+      // access token once on a 401; a still-401 simply means "logged out".
+      try {
+        LF.user = await api.me.get();
+      } catch (e) {
         LF.user = null;
-      } else if (localStorage.getItem('mock_user')) {
-        try {
-          LF.user = JSON.parse(localStorage.getItem('mock_user'));
-        } catch (e) {
-          LF.user = null;
-        }
-      } else {
-        // Who am I? (cookie session). 401 simply means "logged out".
-        try {
-          LF.user = await api.me.get();
-        } catch (e) {
-          LF.user = null;
-        }
       }
       LF.updateAuthUI();
 
@@ -125,10 +115,10 @@
 
     onAuthClick: async function () {
       if (LF.user) {
+        // Sign out: revoke the refresh token + clear the session cookies on the
+        // server, then reset the UI to the logged-out state.
         try { await api.auth.logout(); } catch (e) {}
         LF.user = null;
-        localStorage.removeItem('mock_user');
-        localStorage.setItem('force_logged_out', 'true');
         AppState.savedBeats = [];
         LF.updateAuthUI();
         var suggested = document.getElementById("suggested-creators");
@@ -138,15 +128,10 @@
         LF.loadDiscover("foryou");
         if (typeof showToast === "function") showToast("Signed out", "info");
       } else {
-        // Mock login to prevent navigating to a blank page
-        LF.user = { id: 'mock-1', username: 'Guest', displayName: 'Guest User' };
-        localStorage.setItem('mock_user', JSON.stringify(LF.user));
-        localStorage.removeItem('force_logged_out');
-        LF.updateAuthUI();
-        if (typeof updateProfileStats === "function") updateProfileStats();
-        if (typeof populateSavedFeed === "function") populateSavedFeed();
-        LF.loadDiscover("foryou");
-        if (typeof showToast === "function") showToast("Signed in as Guest User", "success");
+        // Sign in: hand off to Google OAuth. The backend sets HttpOnly session
+        // cookies and redirects back here (redirect_to); bootstrap() then
+        // resolves the signed-in user via /api/me.
+        api.auth.startLogin(location.href);
       }
     },
 
