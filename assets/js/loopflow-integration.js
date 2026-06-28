@@ -29,6 +29,7 @@
         authorId: author.id || null,
         mood: v.mood || "custom",
         likes: v.likesCount || 0,
+        comments: v.commentsCount || 0,
         genre: v.genre,
         bpm: v.bpm,
         visibility: v.visibility || "private",
@@ -301,6 +302,41 @@
         if (nowFollowing) await api.users.follow(userId);
         else await api.users.unfollow(userId);
       } catch (e) { /* optimistic UI already updated */ }
+    },
+
+    // ---- comments ------------------------------------------------------
+    // Fetch the newest comments for a beat. Returns [] on any failure so the
+    // UI can degrade gracefully (offline / not configured).
+    loadComments: async function (beatId) {
+      try {
+        var page = await api.comments.list(beatId, { limit: 50 });
+        return (page && page.items) || [];
+      } catch (e) {
+        return [];
+      }
+    },
+
+    // Post a comment. Returns the created comment view, or null on failure.
+    addComment: async function (beatId, body) {
+      try {
+        return await api.comments.add(beatId, body);
+      } catch (e) {
+        if (typeof showToast === "function") {
+          showToast(e && e.status === 401 ? "Sign in to comment." : "Couldn't post comment.", "error");
+        }
+        return null;
+      }
+    },
+
+    // Delete a comment (author or beat owner). Returns true on success.
+    deleteComment: async function (commentId) {
+      try {
+        await api.comments.remove(commentId);
+        return true;
+      } catch (e) {
+        if (typeof showToast === "function") showToast("Couldn't delete comment.", "error");
+        return false;
+      }
     },
   };
 

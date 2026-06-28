@@ -987,6 +987,11 @@ function createBeatCard(beat, isSaved = false) {
                 <button class="beat-action-btn ${isLiked ? 'active' : ''}" onclick="likeBeat('${beat.id}')">
                     <i class="fas fa-heart"></i> ${beat.likes}
                 </button>
+                ${beat.serverBeat ? `
+                <button class="beat-action-btn" data-comment-count="${beat.id}" onclick="toggleComments('${beat.id}')">
+                    <i class="fas fa-comment"></i> ${beat.comments || 0}
+                </button>
+                ` : ''}
                 <div class="beat-action-btn" style="pointer-events: none; opacity: 0.8;">
                     <i class="fas fa-eye"></i> ${beat.views || Math.floor((beat.likes || 0) * 3.5 + 100)}
                 </div>
@@ -1010,6 +1015,7 @@ function createBeatCard(beat, isSaved = false) {
                 ` : ''}
                 ` : ''}
             </div>
+            ${beat.serverBeat ? `<div class="beat-comments" id="comments-${beat.id}" style="display:none;"></div>` : ''}
         </div>
     `;
 
@@ -1066,6 +1072,98 @@ function reactToBeat(id, type) {
     };
     showToast(reactions[type], 'success');
     if (navigator.vibrate) navigator.vibrate(15);
+}
+
+// ---- comments ---------------------------------------------------------------
+// Comments live on server-backed beats only (they need a real beat id). The
+// panel is lazily loaded the first time it's opened.
+function escapeComment(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+        return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c];
+    });
+}
+
+async function toggleComments(id) {
+    const panel = document.getElementById(`comments-${id}`);
+    if (!panel) return;
+    if (panel.dataset.open === '1') {
+        panel.style.display = 'none';
+        panel.dataset.open = '0';
+        return;
+    }
+    panel.style.display = 'block';
+    panel.dataset.open = '1';
+    panel.innerHTML = '<div style="color: var(--text-muted); padding: 0.5rem 0; font-size: 0.85rem;">Loading comments…</div>';
+    const items = (window.LF && LF.loadComments) ? await LF.loadComments(id) : [];
+    renderComments(id, items);
+}
+
+function renderComments(id, items) {
+    const panel = document.getElementById(`comments-${id}`);
+    if (!panel) return;
+    const signedIn = !!(window.LF && LF.user);
+
+    const inputHtml = signedIn
+        ? `<div style="display:flex; gap:0.5rem; margin-bottom:0.75rem;">
+               <input type="text" id="comment-input-${id}" maxlength="500" placeholder="Add a comment…"
+                      onkeydown="if(event.key==='Enter'){submitComment('${id}')}"
+                      style="flex:1; padding:0.4rem 0.7rem; border:1px solid var(--border,#e5e7eb); border-radius:9999px; font-size:0.85rem;">
+               <button class="beat-action-btn" style="font-weight:bold;" onclick="submitComment('${id}')">Post</button>
+           </div>`
+        : `<div style="color:var(--text-muted); font-size:0.8rem; margin-bottom:0.5rem;">Sign in to join the conversation.</div>`;
+
+    const listHtml = (items && items.length)
+        ? items.map(function (c) {
+            const author = (c.author && c.author.username) || 'unknown';
+            const del = c.canDelete
+                ? `<button onclick="deleteComment('${c.id}','${id}')" title="Delete comment" style="background:none; border:none; color:#ef4444; cursor:pointer; padding:0 0.25rem;"><i class="fas fa-times"></i></button>`
+                : '';
+            return `<div style="display:flex; gap:0.5rem; align-items:flex-start; padding:0.4rem 0; border-top:1px solid var(--border,#f0f0f0);">
+                        <div style="flex:1; min-width:0;">
+                            <span style="font-weight:600; font-size:0.82rem;">@${escapeComment(author)}</span>
+                            <span style="font-size:0.85rem; margin-left:0.35rem;">${escapeComment(c.body)}</span>
+                        </div>${del}
+                    </div>`;
+        }).join('')
+        : `<div style="color:var(--text-muted); font-size:0.8rem; padding:0.25rem 0;">No comments yet. Be the first!</div>`;
+
+    panel.innerHTML = `<div style="padding-top:0.5rem;">${inputHtml}${listHtml}</div>`;
+}
+
+// Keep the comment counter on the card (and in state) in sync after a change.
+function bumpCommentCount(id, delta) {
+    const key = String(id);
+    [AppState.discoverBeats, AppState.savedBeats].forEach(function (list) {
+        (list || []).forEach(function (b) {
+            if (String(b.id) === key) b.comments = Math.max(0, (b.comments || 0) + delta);
+        });
+    });
+    const all = (AppState.discoverBeats || []).concat(AppState.savedBeats || []);
+    const beat = all.find(function (b) { return String(b.id) === key; });
+    document.querySelectorAll(`[data-comment-count="${id}"]`).forEach(function (btn) {
+        btn.innerHTML = `<i class="fas fa-comment"></i> ${beat ? (beat.comments || 0) : ''}`;
+    });
+}
+
+async function submitComment(id) {
+    const input = document.getElementById(`comment-input-${id}`);
+    if (!input) return;
+    const body = input.value.trim();
+    if (!body) return;
+    input.value = '';
+    const comment = (window.LF && LF.addComment) ? await LF.addComment(id, body) : null;
+    if (!comment) return;
+    bumpCommentCount(id, +1);
+    const items = await LF.loadComments(id);
+    renderComments(id, items);
+}
+
+async function deleteComment(commentId, beatId) {
+    const ok = (window.LF && LF.deleteComment) ? await LF.deleteComment(commentId) : false;
+    if (!ok) return;
+    bumpCommentCount(beatId, -1);
+    const items = await LF.loadComments(beatId);
+    renderComments(beatId, items);
 }
 
 function remixBeat(id) {

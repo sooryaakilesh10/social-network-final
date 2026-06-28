@@ -115,6 +115,18 @@
       discover: function (opts) { return request("GET", "/api/feed", { query: opts || {} }); },
     },
 
+    comments: {
+      // Newest-first page of comments on a beat: { items, nextCursor }.
+      list: function (beatId, opts) {
+        return request("GET", "/api/beats/" + beatId + "/comments", { query: opts || {} });
+      },
+      add: function (beatId, body) {
+        return request("POST", "/api/beats/" + beatId + "/comments", { body: { body: body } })
+          .then(function (d) { return d.comment; });
+      },
+      remove: function (id) { return request("DELETE", "/api/comments/" + id); },
+    },
+
     users: {
       profile: function (username) { return request("GET", "/api/users/" + username).then(function (d) { return d.user; }); },
       follow: function (id) { return request("POST", "/api/users/" + id + "/follow"); },
