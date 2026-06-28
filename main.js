@@ -4272,7 +4272,8 @@ const ArrangementState = {
     currentBar: 0,
     paintModePattern: 'A',
     eraseMode: false,
-    selectedClipId: null
+    selectedClipId: null,
+    barTimeline: null // per-bar tempos + cumulative start times, built on play
 };
 
 let songLoop = null;
@@ -4526,6 +4527,37 @@ function setupArrangementListeners() {
     document.getElementById('export-song-btn')?.addEventListener('click', exportSongToWAV);
 }
 
+// Build the arrangement's per-bar tempo map + cumulative start times. Each
+// bar's tempo comes from the pattern placed in it (per-pattern tempo), so a
+// slow pattern's bar takes longer (playhead moves slower) and a fast one's bar
+// is shorter (playhead moves faster). Bars with no tempo'd pattern inherit the
+// previous bar's tempo.
+function computeBarTimeline() {
+    const tempos = [];
+    const starts = [];
+    const durations = [];
+    let acc = 0;
+    let lastTempo = AppState.bpm;
+    for (let bar = 0; bar < ArrangementState.songLength; bar++) {
+        let barTempo = lastTempo;
+        const clipsHere = ArrangementState.clips
+            .filter(c => c.bar === bar && !c.patternId.startsWith('VOICE_'))
+            .sort((a, b) => a.trackIdx - b.trackIdx);
+        for (const c of clipsHere) {
+            const bank = patternBanks[c.patternId];
+            if (bank && bank.bpm) { barTempo = bank.bpm; break; }
+        }
+        lastTempo = barTempo;
+        const dur = AppState.gridSteps * (60 / barTempo / 2); // seconds for this bar
+        tempos[bar] = barTempo;
+        starts[bar] = acc;
+        durations[bar] = dur;
+        acc += dur;
+    }
+    starts[ArrangementState.songLength] = acc; // total-duration sentinel
+    return { tempos, starts, durations };
+}
+
 async function toggleSongPlayback() {
     if (!AppState.audioContextStarted) { 
         await Tone.start(); 
@@ -4542,14 +4574,21 @@ async function toggleSongPlayback() {
         Tone.Transport.stop();
         Tone.Transport.seconds = 0;
         
-        // Ensure current pattern is saved
+        // Ensure current pattern is saved (keep its mixer/piano/tempo too).
         patternBanks[currentPattern] = {
             grid: JSON.parse(JSON.stringify(AppState.grid)),
-            pianoNotes: JSON.parse(JSON.stringify(AppState.pianoNotes || []))
+            pianoNotes: JSON.parse(JSON.stringify(AppState.pianoNotes || [])),
+            mixer: snapshotMixer(),
+            pianoVolume: pianoVolume,
+            bpm: AppState.bpm
         };
 
         if (songLoop) songLoop.dispose();
-        
+
+        // Each bar plays at the tempo of the pattern placed in it.
+        ArrangementState.barTimeline = computeBarTimeline();
+        Tone.Transport.bpm.value = ArrangementState.barTimeline.tempos[0] || AppState.bpm;
+
         let songStep = 0;
         const totalSongSteps = ArrangementState.songLength * AppState.gridSteps;
         
@@ -4569,6 +4608,13 @@ async function toggleSongPlayback() {
             const anySoloed = ArrangementState.tracks.some(t => t.solo);
 
             if (stepInBar === 0) {
+                // Switch the transport to this bar's tempo so its pattern plays
+                // (and the playhead moves) at its own speed.
+                const tl = ArrangementState.barTimeline;
+                if (tl && tl.tempos[currentBar]) {
+                    Tone.Transport.bpm.setValueAtTime(tl.tempos[currentBar], time);
+                }
+
                 let fxToApply = { settings: AppState.fxSettings, active: AppState.fxActive };
                 for (let c of activeClips) {
                     if (c.fxSettings) {
@@ -4651,7 +4697,11 @@ function stopSongPlayback() {
     }
     ArrangementState.isPlayingSong = false;
     Tone.Transport.stop();
-    
+    ArrangementState.barTimeline = null;
+    // Restore the transport to the active pattern's tempo (song playback may
+    // have left it on the last bar's tempo).
+    if (typeof Tone !== 'undefined' && Tone.Transport) Tone.Transport.bpm.value = AppState.bpm;
+
     if (songPlayAnimId) cancelAnimationFrame(songPlayAnimId);
     
     const btn = document.getElementById('song-play-btn');
@@ -4677,17 +4727,34 @@ function updatePlayheadPosition() {
 
 function animateSongPlayhead() {
     if (!ArrangementState.isPlayingSong) return;
-    
+
     const playhead = document.getElementById('song-playhead');
     const cellWidth = 80;
-    const stepDur = 60 / AppState.bpm / 2; // seconds per 8th note
-    const currentStepFloat = Tone.Transport.seconds / stepDur;
-    const currentBarFloat = currentStepFloat / AppState.gridSteps;
-    
+    const elapsed = Tone.Transport.seconds;
+    const tl = ArrangementState.barTimeline;
+
+    // Map elapsed time -> bar + fraction using each bar's own duration, so the
+    // playhead reaches a bar's right edge exactly when that bar finishes.
+    let currentBarFloat;
+    if (tl && tl.durations.length) {
+        const songLen = ArrangementState.songLength;
+        let bar = 0;
+        while (bar < songLen && elapsed >= tl.starts[bar + 1]) bar++;
+        if (bar >= songLen) {
+            currentBarFloat = songLen;
+        } else {
+            const frac = tl.durations[bar] > 0 ? (elapsed - tl.starts[bar]) / tl.durations[bar] : 0;
+            currentBarFloat = bar + Math.min(1, Math.max(0, frac));
+        }
+    } else {
+        const stepDur = 60 / AppState.bpm / 2; // seconds per 8th note
+        currentBarFloat = (elapsed / stepDur) / AppState.gridSteps;
+    }
+
     if (playhead) {
         const pos = currentBarFloat * cellWidth;
         playhead.style.left = pos + 'px';
-        
+
         // Auto-scroll timeline
         const scrollContainer = document.getElementById('timeline-grid-scroll');
         if (scrollContainer) {
