@@ -292,6 +292,7 @@ async function togglePlayback() {
 
         // Stop any previews that might be playing
         stopChordPreview();
+        stopBeatPreview();
 
         Tone.Transport.stop();
         Tone.Transport.seconds = 0;
@@ -1010,7 +1011,7 @@ function createBeatCard(beat, isSaved = false) {
     card.innerHTML = `
         <div class="beat-visualizer">
             <canvas></canvas>
-            <div class="beat-play-overlay" onclick="playBeat('${beat.id}')">
+            <div class="beat-play-overlay" data-play-beat="${beat.id}" onclick="playBeat('${beat.id}')">
                 <i class="fas fa-play"></i>
             </div>
         </div>
@@ -1223,13 +1224,107 @@ function remixBeat(id) {
     }
 }
 
-function playBeat(id) {
-    showToast('Playing beat...', 'success');
+let previewLoop = null;
+let previewBeatId = null;
+
+// Play a beat card (Discover / Saved / Profile) in-place, without disturbing
+// the editor. Click again (or click another) to stop/switch.
+async function playBeat(id) {
+    const key = String(id);
+
+    // Toggle off if this beat is already previewing.
+    if (previewBeatId === key) { stopBeatPreview(); return; }
+
+    // Find the beat in whichever feed it lives in.
+    let beat = null;
+    for (const pool of [AppState.discoverBeats, AppState.savedBeats]) {
+        const found = (pool || []).find(b => String(b.id) === key);
+        if (found) { beat = found; break; }
+    }
+    if (!beat) { showToast('Could not find this beat', 'error'); return; }
+
+    if (!AppState.audioContextStarted) {
+        await Tone.start();
+        initAudio();
+    }
+
+    // Server list views omit the heavy document; fetch the full beat for its grid.
+    if (beat.serverBeat && !beat.grid && window.LF) {
+        const full = await LF.openBeat(beat.id);
+        if (full) beat = full;
+    }
+    const grid = beat.grid;
+    if (!grid) { showToast('Could not load this beat', 'error'); return; }
+
     // Fire-and-forget play counter for real server beats.
-    const beat = (AppState.discoverBeats || []).find(b => String(b.id) === String(id));
-    if (beat && beat.serverBeat && window.LoopFlowAPI && window.LF && LF.enabled) {
+    if (beat.serverBeat && window.LoopFlowAPI && window.LF && LF.enabled) {
         window.LoopFlowAPI.beats.play(beat.id).catch(function () {});
     }
+
+    // Take over the transport from anything else that's playing.
+    if (AppState.isPlaying) togglePlayback();
+    if (AppState.isPianoPlaying) stopPianoPlayback();
+    if (typeof ArrangementState !== 'undefined' && ArrangementState.isPlayingSong) stopSongPlayback();
+    stopBeatPreview();
+
+    const steps = beat.gridSteps || (grid[0] ? grid[0].length : 16);
+    const notes = beat.pianoNotes || [];
+    let step = 0;
+
+    Tone.Transport.bpm.value = beat.bpm || AppState.bpm;
+
+    previewLoop = new Tone.Loop((time) => {
+        const s = step % steps;
+        if (grid[0] && grid[0][s]) synths.kick.triggerAttackRelease("C1", "8n", time);
+        if (grid[1] && grid[1][s]) synths.snare.triggerAttackRelease("8n", time);
+        if (grid[2] && grid[2][s]) synths.hihat.triggerAttackRelease("32n", time);
+        if (grid[3] && grid[3][s]) synths.clap.triggerAttackRelease("8n", time);
+        if (grid[4] && grid[4][s]) synths.bass.triggerAttackRelease("C2", "8n", time);
+        if (grid[5] && grid[5][s]) synths.synth.triggerAttackRelease(["C4", "E4", "G4"], "8n", time);
+        if (grid[6] && grid[6][s]) synths.fx.triggerAttackRelease("C5", "8n", time);
+        notes.forEach(note => {
+            if (note.step === s && pianoSynth && pianoNotes[note.row]) {
+                const durationSeconds = Tone.Time("8n").toSeconds() * (note.duration || 1);
+                pianoSynth.triggerAttackRelease(pianoNotes[note.row].note, durationSeconds, time);
+            }
+        });
+        step++;
+    }, "8n");
+
+    previewBeatId = key;
+    setBeatCardPlaying(key, true);
+    Tone.Transport.stop();
+    Tone.Transport.seconds = 0;
+    Tone.Transport.start();
+    previewLoop.start(0);
+    showToast(`Playing "${beat.title || 'beat'}"`, 'success');
+}
+
+function stopBeatPreview() {
+    if (previewLoop) {
+        previewLoop.stop();
+        previewLoop.dispose();
+        previewLoop = null;
+    }
+    if (previewBeatId) {
+        setBeatCardPlaying(previewBeatId, false);
+        previewBeatId = null;
+    }
+    // Only halt the transport if the editor / song aren't using it.
+    if (!AppState.isPlaying && !(typeof ArrangementState !== 'undefined' && ArrangementState.isPlayingSong)) {
+        Tone.Transport.stop();
+    }
+}
+
+// Swap the play/pause icon on every card showing this beat (it can appear in
+// more than one feed at once).
+function setBeatCardPlaying(id, playing) {
+    document.querySelectorAll('.beat-play-overlay').forEach(el => {
+        if (el.dataset.playBeat !== String(id)) return;
+        const icon = el.querySelector('i');
+        if (icon) icon.className = playing ? 'fas fa-pause' : 'fas fa-play';
+        el.classList.toggle('playing', playing);
+    });
 }
 
 // ============================================
@@ -4645,6 +4740,7 @@ async function toggleSongPlayback() {
     if (ArrangementState.isPlayingSong) {
         if (AppState.isPlaying) togglePlayback();
         if (AppState.isPianoPlaying) stopPianoPlayback();
+        stopBeatPreview();
 
         Tone.Transport.stop();
         Tone.Transport.seconds = 0;

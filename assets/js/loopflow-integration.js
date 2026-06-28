@@ -36,6 +36,7 @@
         description: v.document ? (v.document.description || "") : "",
         grid: v.document ? v.document.grid : null,
         gridSteps: v.document ? v.document.gridSteps : null,
+        pianoNotes: v.document ? (v.document.pianoNotes || []) : null,
         serverBeat: true,
         likedByViewer: !!v.likedByViewer,
       };
