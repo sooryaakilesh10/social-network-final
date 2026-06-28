@@ -1322,9 +1322,25 @@ body {
     }
 }
 
-/* Single-post detail modal (Twitter-style) */
+/* Single-post detail modal (Twitter-style) — centered, not a bottom sheet */
+#post-detail-modal {
+    align-items: center;
+}
+
+#post-detail-modal .modal-content,
 .post-detail-content {
+    width: calc(100% - 2rem);
+    max-width: 560px;
+    max-height: 88vh;
     overflow-y: auto;
+    border-radius: 20px;
+    border-bottom: 1px solid var(--glass-border);
+    animation: popIn 0.2s ease;
+}
+
+@keyframes popIn {
+    from { transform: scale(0.96); opacity: 0; }
+    to   { transform: scale(1);    opacity: 1; }
 }
 
 .post-detail-back {
