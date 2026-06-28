@@ -1858,6 +1858,11 @@ function addVoiceToBeat(url, clipId, clipName) {
 // ============================================
 let pianoSynth = null;
 let currentInstrument = 'piano';
+let pianoVolume = -5; // dB; per-pattern (stored in pattern banks)
+
+function applyPianoVolume() {
+    if (pianoSynth) pianoSynth.volume.value = pianoVolume;
+}
 
 const instrumentConfigs = {
     piano: {
@@ -2045,6 +2050,18 @@ function initPiano() {
             AppState.pianoZoomHeight = 28;
             applyPianoZoom();
             savePianoState();
+        });
+    }
+
+    // Per-pattern piano volume. Stored in the active pattern bank so each
+    // pattern keeps its own level.
+    const pianoVolSlider = document.getElementById('piano-vol-slider');
+    if (pianoVolSlider) {
+        pianoVolSlider.value = pianoVolume;
+        pianoVolSlider.addEventListener('input', (e) => {
+            pianoVolume = parseInt(e.target.value);
+            applyPianoVolume();
+            if (patternBanks[currentPattern]) patternBanks[currentPattern].pianoVolume = pianoVolume;
         });
     }
 
@@ -2552,7 +2569,7 @@ function changeInstrument(instrument) {
     pianoSynth = new Tone.PolySynth(Tone.Synth, {
         oscillator: config.oscillator,
         envelope: config.envelope,
-        volume: -5
+        volume: pianoVolume
     }).connect(masterBus || Tone.Destination);
 }
 
@@ -2847,6 +2864,50 @@ function applyTrackVolume(idx) {
 
 function applyAllTrackVolumes() {
     for (let i = 0; i < 8; i++) applyTrackVolume(i);
+}
+
+// ---- per-pattern mixer state -----------------------------------------------
+// Snapshot/restore the mixer (volumes + mute/solo) so each pattern bank keeps
+// its own settings.
+function snapshotMixer() {
+    return {
+        volumes: trackVolumes.slice(),
+        muted: trackMuted.slice(),
+        soloed: trackSoloed.slice(),
+    };
+}
+
+function restoreMixer(m) {
+    if (!m) return;
+    for (let i = 0; i < 8; i++) {
+        if (m.volumes && m.volumes[i] !== undefined) trackVolumes[i] = m.volumes[i];
+        if (m.muted) trackMuted[i] = !!m.muted[i];
+        if (m.soloed) trackSoloed[i] = !!m.soloed[i];
+    }
+    syncMixerUI();
+    applyAllTrackVolumes();
+}
+
+// Push the current trackVolumes/Muted/Soloed arrays back into the mixer UI.
+function syncMixerUI() {
+    const container = document.getElementById('mixer-tracks');
+    if (!container) return;
+    container.querySelectorAll('.mixer-vol-slider').forEach(slider => {
+        slider.value = trackVolumes[parseInt(slider.dataset.track)];
+    });
+    container.querySelectorAll('.btn-mute').forEach(btn => {
+        btn.classList.toggle('active', trackMuted[parseInt(btn.dataset.track)]);
+    });
+    container.querySelectorAll('.btn-solo').forEach(btn => {
+        btn.classList.toggle('active', trackSoloed[parseInt(btn.dataset.track)]);
+    });
+}
+
+// Apply a pattern bank's saved piano volume (if any) to the synth + slider.
+function syncPianoVolumeUI() {
+    applyPianoVolume();
+    const slider = document.getElementById('piano-vol-slider');
+    if (slider) slider.value = pianoVolume;
 }
 
 // ============================================
@@ -3211,7 +3272,9 @@ function initPatternBanks() {
     // Save initial grid and piano notes to bank A
     patternBanks.A = {
         grid: JSON.parse(JSON.stringify(AppState.grid)),
-        pianoNotes: JSON.parse(JSON.stringify(AppState.pianoNotes || []))
+        pianoNotes: JSON.parse(JSON.stringify(AppState.pianoNotes || [])),
+        mixer: snapshotMixer(),
+        pianoVolume: pianoVolume
     };
 
     document.querySelectorAll('.pattern-btn').forEach(btn => {
@@ -3221,7 +3284,9 @@ function initPatternBanks() {
             // Save current state to current bank
             patternBanks[currentPattern] = {
                 grid: JSON.parse(JSON.stringify(AppState.grid)),
-                pianoNotes: JSON.parse(JSON.stringify(AppState.pianoNotes || []))
+                pianoNotes: JSON.parse(JSON.stringify(AppState.pianoNotes || [])),
+                mixer: snapshotMixer(),
+                pianoVolume: pianoVolume
             };
 
             // Switch to target bank
@@ -3235,12 +3300,19 @@ function initPatternBanks() {
                     AppState.grid[t] = bank.grid[t].slice(0, AppState.gridSteps);
                 }
                 AppState.pianoNotes = bank.pianoNotes ? JSON.parse(JSON.stringify(bank.pianoNotes)) : [];
+                // Restore this pattern's mixer + piano volume.
+                restoreMixer(bank.mixer);
+                if (bank.pianoVolume !== undefined) pianoVolume = bank.pianoVolume;
+                syncPianoVolumeUI();
             } else {
                 AppState.grid = Array(8).fill(null).map(() => Array(AppState.gridSteps).fill(false));
                 AppState.pianoNotes = [];
+                // New (empty) patterns inherit the current mixer + piano volume.
                 patternBanks[target] = {
                     grid: JSON.parse(JSON.stringify(AppState.grid)),
-                    pianoNotes: []
+                    pianoNotes: [],
+                    mixer: snapshotMixer(),
+                    pianoVolume: pianoVolume
                 };
             }
 
