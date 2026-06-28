@@ -875,12 +875,22 @@ function saveProject() {
     showToast(msg, 'success');
 }
 
-function removeBeat(id) {
+async function removeBeat(id) {
     if (!confirm('Are you sure you want to remove this beat?')) return;
-    
+
+    const beat = AppState.savedBeats.find(b => String(b.id) === String(id));
+
+    // Signed-in server beats must be deleted on the backend, otherwise they
+    // reappear on the next refresh and the DB-backed stats stay unchanged.
+    if (beat && beat.serverBeat && window.LF && LF.user) {
+        const ok = await LF.deleteBeat(id); // handles local resync + its own error toast
+        if (ok) showToast('Beat removed', 'info');
+        return;
+    }
+
     AppState.savedBeats = AppState.savedBeats.filter(b => String(b.id) !== String(id));
     localStorage.setItem('loopflow_beats', JSON.stringify(AppState.savedBeats));
-    
+
     populateSavedFeed();
     updateProfileStats();
     showToast('Beat removed', 'info');

@@ -288,6 +288,25 @@
       }
     },
 
+    // Delete one of the user's beats on the backend, then resync local state
+    // (saved list + DB-backed profile stats). Returns true on success.
+    deleteBeat: async function (id) {
+      try {
+        await api.beats.remove(id);
+        AppState.savedBeats = AppState.savedBeats.filter(function (b) {
+          return String(b.id) !== String(id);
+        });
+        // Refresh /api/me so beatsCount/etc. reflect the deletion.
+        try { LF.user = await api.me.get(); } catch (e) { /* keep stale counts */ }
+        if (typeof populateSavedFeed === "function") populateSavedFeed();
+        if (typeof updateProfileStats === "function") updateProfileStats();
+        return true;
+      } catch (e) {
+        if (typeof showToast === "function") showToast("Couldn't remove beat.", "error");
+        return false;
+      }
+    },
+
     toggleLike: async function (id, nowLiked) {
       try {
         if (nowLiked) await api.beats.like(id);
