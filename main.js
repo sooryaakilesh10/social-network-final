@@ -670,13 +670,22 @@ function changeGenre(genre) {
 
 function magicFill() {
     pushUndoState();
-    const pattern = MagicPatterns[AppState.currentGenre];
-    const patternLength = pattern[0].length; // base pattern is 8 steps
 
-    // Apply pattern to grid, repeating for longer grids
     for (let track = 0; track < 8; track++) {
         for (let step = 0; step < AppState.gridSteps; step++) {
-            AppState.grid[track][step] = pattern[track][step % patternLength] === 1;
+            let prob = 0.15;
+            
+            if (track === 0) { // Kick
+                prob = (step % 4 === 0) ? 0.8 : 0.1;
+            } else if (track === 1) { // Snare
+                prob = (step % 8 === 4) ? 0.9 : 0.05;
+            } else if (track === 2) { // Hi-hat
+                prob = (step % 2 === 0) ? 0.7 : 0.3;
+            } else if (track === 4) { // Bass
+                prob = (step % 4 === 0 || step % 4 === 2) ? 0.4 : 0.1;
+            }
+            
+            AppState.grid[track][step] = Math.random() < prob;
         }
     }
 
@@ -692,7 +701,7 @@ function magicFill() {
         navigator.vibrate([50, 50, 50]);
     }
 
-    showToast('✨ Magic pattern applied!', 'success');
+    showToast('✨ Magic random beat created!', 'success');
 }
 
 function clearGrid() {
