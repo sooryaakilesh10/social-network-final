@@ -780,8 +780,11 @@ function populateDiscoveryFeed() {
 
     // Live backend feed loaded with results → render it.
     if (AppState.discoverBeats && AppState.discoverBeats.length) {
-        AppState.discoverBeats.forEach(beat => feed.appendChild(createBeatCard(beat)));
-        return;
+        const validBeats = AppState.discoverBeats.filter(beat => !(window.LF && LF.user && (beat.author === LF.user.username || beat.author === 'You')));
+        if (validBeats.length > 0) {
+            validBeats.forEach(beat => feed.appendChild(createBeatCard(beat)));
+            return;
+        }
     }
 
     // Loaded but empty (backend on, no matching posts) → contextual empty state.
@@ -800,7 +803,8 @@ function populateDiscoveryFeed() {
     }
 
     // Offline / backend not configured → built-in samples so the page isn't empty.
-    SampleBeats.forEach(beat => feed.appendChild(createBeatCard(beat)));
+    SampleBeats.filter(beat => !(window.LF && LF.user && (beat.author === LF.user.username || beat.author === 'You')))
+        .forEach(beat => feed.appendChild(createBeatCard(beat)));
 }
 
 // Switch the Discover feed mode (For You / Following / Trending).
