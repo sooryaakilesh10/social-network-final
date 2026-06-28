@@ -550,6 +550,10 @@ function setupEventListeners() {
         if (AppState.audioContextStarted) {
             Tone.Transport.bpm.value = AppState.bpm;
         }
+        // Tempo is per-pattern: remember it on the active bank.
+        if (typeof patternBanks !== 'undefined' && patternBanks[currentPattern]) {
+            patternBanks[currentPattern].bpm = AppState.bpm;
+        }
     });
 
     // Grid length control
@@ -2910,6 +2914,17 @@ function syncPianoVolumeUI() {
     if (slider) slider.value = pianoVolume;
 }
 
+// Push AppState.bpm into the tempo UI + transport (used on pattern switch).
+function syncBpmUI() {
+    const slider = document.getElementById('bpm-slider');
+    const value = document.getElementById('bpm-value');
+    if (slider) slider.value = Math.min(parseInt(slider.max) || 180, AppState.bpm);
+    if (value) value.textContent = AppState.bpm;
+    if (AppState.audioContextStarted && typeof Tone !== 'undefined' && Tone.Transport) {
+        Tone.Transport.bpm.value = AppState.bpm;
+    }
+}
+
 // ============================================
 // EFFECTS RACK — Reverb, Delay, Distortion, Chorus
 // ============================================
@@ -3274,7 +3289,8 @@ function initPatternBanks() {
         grid: JSON.parse(JSON.stringify(AppState.grid)),
         pianoNotes: JSON.parse(JSON.stringify(AppState.pianoNotes || [])),
         mixer: snapshotMixer(),
-        pianoVolume: pianoVolume
+        pianoVolume: pianoVolume,
+        bpm: AppState.bpm
     };
 
     document.querySelectorAll('.pattern-btn').forEach(btn => {
@@ -3286,7 +3302,8 @@ function initPatternBanks() {
                 grid: JSON.parse(JSON.stringify(AppState.grid)),
                 pianoNotes: JSON.parse(JSON.stringify(AppState.pianoNotes || [])),
                 mixer: snapshotMixer(),
-                pianoVolume: pianoVolume
+                pianoVolume: pianoVolume,
+                bpm: AppState.bpm
             };
 
             // Switch to target bank
@@ -3300,19 +3317,22 @@ function initPatternBanks() {
                     AppState.grid[t] = bank.grid[t].slice(0, AppState.gridSteps);
                 }
                 AppState.pianoNotes = bank.pianoNotes ? JSON.parse(JSON.stringify(bank.pianoNotes)) : [];
-                // Restore this pattern's mixer + piano volume.
+                // Restore this pattern's mixer + piano volume + tempo.
                 restoreMixer(bank.mixer);
                 if (bank.pianoVolume !== undefined) pianoVolume = bank.pianoVolume;
                 syncPianoVolumeUI();
+                if (bank.bpm !== undefined) AppState.bpm = bank.bpm;
+                syncBpmUI();
             } else {
                 AppState.grid = Array(8).fill(null).map(() => Array(AppState.gridSteps).fill(false));
                 AppState.pianoNotes = [];
-                // New (empty) patterns inherit the current mixer + piano volume.
+                // New (empty) patterns inherit the current mixer + piano volume + tempo.
                 patternBanks[target] = {
                     grid: JSON.parse(JSON.stringify(AppState.grid)),
                     pianoNotes: [],
                     mixer: snapshotMixer(),
-                    pianoVolume: pianoVolume
+                    pianoVolume: pianoVolume,
+                    bpm: AppState.bpm
                 };
             }
 
