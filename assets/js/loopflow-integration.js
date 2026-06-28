@@ -83,17 +83,18 @@
       }
       LF.updateAuthUI();
 
-      // Seed which artists the viewer already follows BEFORE rendering the
-      // feed, so follow buttons render in the right state after a refresh.
-      if (LF.user) await LF.loadFollowing();
-
-      // Discover feed — personalized "For You" ranking by default.
-      await LF.loadDiscover(AppState.discoverMode || "foryou");
-
-      // Saved creations + suggested creators require a session.
+      // Fire the independent post-auth loads concurrently instead of serially.
+      // Only the discover feed depends on follow state (so its buttons render
+      // correctly), so it waits on loadFollowing; everything else races.
+      var mode = AppState.discoverMode || "foryou";
       if (LF.user) {
-        await LF.refreshMine();
-        await LF.loadSuggested();
+        await Promise.all([
+          LF.loadFollowing().then(function () { return LF.loadDiscover(mode); }),
+          LF.refreshMine(),
+          LF.loadSuggested(),
+        ]);
+      } else {
+        await LF.loadDiscover(mode);
       }
     },
 
